@@ -1,234 +1,279 @@
 "use client"
 
 import * as React from "react"
-import * as d3 from "d3"
 import { CONTENT_TYPE_CONFIG } from "@/lib/content-types"
 import type { TextBlock } from "@/components/tile-card"
 import { GraphDetailPanel } from "./graph-detail-panel"
 
+// ─── Layout constants ─────────────────────────────────────────────────────────
+
+// Max nodes per ring and their base radii (at reference container min-dim 720px)
+const RINGS = [
+  { max: 8,  baseR: 210 },
+  { max: 16, baseR: 380 },
+  { max: 28, baseR: 550 },
+  { max: 48, baseR: 720 },
+]
+
+const NODE_R   = 28   // regular block node
+const CENTER_R = 42   // project centre node
+const SYNTH_R  = 32   // synthesis node
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface SimNode extends d3.SimulationNodeDatum {
+interface GraphNode {
   id: string
+  x: number
+  y: number
   block?: TextBlock
+  isCenter?: boolean
   isSynthesis?: boolean
   synthesisText?: string
   synthesisGenerating?: boolean
 }
 
-interface SimLink extends d3.SimulationLinkDatum<SimNode> {
-  isSynthesisLink?: boolean
+interface GraphEdge {
+  id: string
+  sourceId: string
+  targetId: string
+  sx: number; sy: number
+  tx: number; ty: number
+  isSpoke: boolean
+  isSynth: boolean
 }
 
 interface GraphAreaProps {
   blocks: TextBlock[]
   ghostNote?: { id: string; text: string; category: string; isGenerating: boolean }
-  onReEnrich:        (id: string) => void
-  onTogglePin:       (id: string) => void
-  onEdit:            (id: string, text: string) => void
-  onEditAnnotation:  (id: string, annotation: string) => void
+  projectName: string
+  onReEnrich:       (id: string) => void
+  onTogglePin:      (id: string) => void
+  onEdit:           (id: string, text: string) => void
+  onEditAnnotation: (id: string, annotation: string) => void
   hasApiKey: boolean
   onOpenSidebar: () => void
 }
 
-interface ZoomTransform { x: number; y: number; k: number }
+// ─── Layout helpers ───────────────────────────────────────────────────────────
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function getNodeRadius(node: SimNode): number {
-  if (node.isSynthesis) return 34
-  return 26
-}
-
-function truncate(text: string, max: number): string {
-  return text.length > max ? text.slice(0, max) + "…" : text
-}
-
-function buildGraph(
+function computeNodes(
   blocks: TextBlock[],
-  ghostNote?: { id: string; text: string; category: string; isGenerating: boolean },
-  existingNodes: SimNode[] = []
-) {
-  const blockIds = new Set(blocks.map(b => b.id))
+  ghostNote: GraphAreaProps["ghostNote"],
+  cx: number,
+  cy: number,
+  minDim: number,
+): GraphNode[] {
+  const scale = Math.max(0.5, Math.min(1.35, minDim / 720))
+  const nodes: GraphNode[] = []
 
-  // Preserve positions for existing nodes
-  const posMap = new Map<string, { x?: number; y?: number; vx?: number; vy?: number }>()
-  for (const n of existingNodes) {
-    posMap.set(n.id, { x: n.x, y: n.y, vx: n.vx, vy: n.vy })
+  // Centre: project name
+  nodes.push({ id: "__center__", x: cx, y: cy, isCenter: true })
+
+  // Distribute blocks across rings, starting from top (–π/2)
+  let placed = 0
+  for (let ri = 0; ri < RINGS.length && placed < blocks.length; ri++) {
+    const slice = blocks.slice(placed, placed + RINGS[ri].max)
+    const count  = slice.length
+    const radius = RINGS[ri].baseR * scale
+    for (let i = 0; i < count; i++) {
+      const angle = (2 * Math.PI * i / count) - Math.PI / 2
+      nodes.push({
+        id: slice[i].id,
+        x: cx + radius * Math.cos(angle),
+        y: cy + radius * Math.sin(angle),
+        block: slice[i],
+      })
+    }
+    placed += count
   }
 
-  const nodes: SimNode[] = blocks.map(b => {
-    const prev = posMap.get(b.id)
-    return { id: b.id, block: b, ...prev }
-  })
-
+  // Synthesis: just beyond the outermost occupied ring, centred at top
   if (ghostNote) {
-    const prev = posMap.get(ghostNote.id)
+    const lastRingIdx = Math.min(
+      Math.ceil(blocks.length / RINGS[0].max),
+      RINGS.length - 1,
+    )
+    const outerR = (RINGS[lastRingIdx].baseR + 80) * scale
     nodes.push({
       id: ghostNote.id,
+      x: cx,
+      y: cy - outerR,
       isSynthesis: true,
       synthesisText: ghostNote.text,
       synthesisGenerating: ghostNote.isGenerating,
-      ...prev,
     })
   }
 
-  const links: SimLink[] = []
-  const edgeSet = new Set<string>()
-
-  for (const block of blocks) {
-    if (!block.influencedBy?.length) continue
-    for (const targetId of block.influencedBy) {
-      if (!blockIds.has(targetId)) continue
-      const edgeKey = [block.id, targetId].sort().join("§")
-      if (!edgeSet.has(edgeKey)) {
-        edgeSet.add(edgeKey)
-        links.push({ source: block.id, target: targetId })
-      }
-    }
-  }
-
-  if (ghostNote) {
-    for (const block of blocks) {
-      links.push({ source: ghostNote.id, target: block.id, isSynthesisLink: true })
-    }
-  }
-
-  return { nodes, links }
+  return nodes
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
+function buildEdges(nodes: GraphNode[], blocks: TextBlock[]): GraphEdge[] {
+  const edges: GraphEdge[] = []
+  const nodeMap = new Map(nodes.map(n => [n.id, n]))
+  const blockIds = new Set(blocks.map(b => b.id))
+  const center = nodeMap.get("__center__")!
+
+  // Spokes: all non-center nodes → center
+  for (const n of nodes) {
+    if (n.isCenter) continue
+    edges.push({
+      id: `spoke-${n.id}`,
+      sourceId: "__center__",
+      targetId: n.id,
+      sx: center.x, sy: center.y,
+      tx: n.x, ty: n.y,
+      isSpoke: true,
+      isSynth: n.isSynthesis ?? false,
+    })
+  }
+
+  // Chords: influencedBy connections between blocks
+  const seen = new Set<string>()
+  for (const b of blocks) {
+    if (!b.influencedBy?.length) continue
+    for (const tid of b.influencedBy) {
+      if (!blockIds.has(tid)) continue
+      const key = [b.id, tid].sort().join("§")
+      if (seen.has(key)) continue
+      seen.add(key)
+      const src = nodeMap.get(b.id)
+      const tgt = nodeMap.get(tid)
+      if (!src || !tgt) continue
+      edges.push({
+        id: `chord-${key}`,
+        sourceId: b.id,
+        targetId: tid,
+        sx: src.x, sy: src.y,
+        tx: tgt.x, ty: tgt.y,
+        isSpoke: false,
+        isSynth: false,
+      })
+    }
+  }
+
+  return edges
+}
+
+/** Quadratic bezier path curving slightly away from centre */
+function chordPath(sx: number, sy: number, tx: number, ty: number, cx: number, cy: number): string {
+  const mx = (sx + tx) / 2
+  const my = (sy + ty) / 2
+  const dx = mx - cx
+  const dy = my - cy
+  const dist = Math.hypot(dx, dy)
+  if (dist < 1) return `M ${sx} ${sy} L ${tx} ${ty}`
+  const f = Math.min(55, dist * 0.14) / dist
+  return `M ${sx} ${sy} Q ${mx + dx * f} ${my + dy * f} ${tx} ${ty}`
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export function GraphArea({
   blocks,
   ghostNote,
+  projectName,
   onReEnrich,
   onTogglePin,
   onEdit,
   onEditAnnotation,
-  hasApiKey,
-  onOpenSidebar,
 }: GraphAreaProps) {
   const containerRef = React.useRef<HTMLDivElement>(null)
   const svgRef       = React.useRef<SVGSVGElement>(null)
-  const simRef       = React.useRef<d3.Simulation<SimNode, SimLink> | null>(null)
-  const nodesRef     = React.useRef<SimNode[]>([])
-  const linksRef     = React.useRef<SimLink[]>([])
 
-  const [, forceUpdate] = React.useReducer(x => x + 1, 0)
-  const [dims, setDims]           = React.useState({ w: 900, h: 600 })
-  const dimsRef = React.useRef({ w: 900, h: 600 })
-  const [selectedId, setSelectedId]   = React.useState<string | null>(null)
-  const [hoveredId, setHoveredId]     = React.useState<string | null>(null)
-  const [tooltip, setTooltip]     = React.useState<{ id: string; x: number; y: number } | null>(null)
-  const [transform, setTransform] = React.useState<ZoomTransform>({ x: 0, y: 0, k: 1 })
+  const [dims,       setDims]       = React.useState({ w: 900, h: 600 })
+  const [selectedId, setSelectedId] = React.useState<string | null>(null)
+  const [hoveredId,  setHoveredId]  = React.useState<string | null>(null)
+  const [tooltip,    setTooltip]    = React.useState<{ id: string; x: number; y: number } | null>(null)
+  const [transform,  setTransform]  = React.useState({ x: 0, y: 0, k: 1 })
 
-  // Refs for pan / drag
-  const isPanning  = React.useRef(false)
-  const panStart   = React.useRef({ mx: 0, my: 0, tx: 0, ty: 0 })
-  const draggedNode = React.useRef<SimNode | null>(null)
+  // Tracks which node IDs have been introduced (for new-node fly-in animation).
+  // Initialised with ALL current block IDs so first render has no animation.
+  const [knownIds, setKnownIds] = React.useState<Set<string>>(
+    () => new Set(blocks.map(b => b.id))
+  )
 
-  // ── Measure container ───────────────────────────────────────────────────
+  // Pan refs
+  const isPanning = React.useRef(false)
+  const panStart  = React.useRef({ mx: 0, my: 0, tx: 0, ty: 0 })
+
+  // ── Measure container ────────────────────────────────────────────────────
   React.useEffect(() => {
     if (!containerRef.current) return
     const obs = new ResizeObserver(entries => {
       const { width, height } = entries[0].contentRect
-      dimsRef.current = { w: width, h: height }
       setDims({ w: width, h: height })
     })
     obs.observe(containerRef.current)
     return () => obs.disconnect()
   }, [])
 
-  // ── Initialise simulation once ──────────────────────────────────────────
-  React.useEffect(() => {
-    const { w, h } = dimsRef.current
-    simRef.current = d3
-      .forceSimulation<SimNode>([])
-      .force(
-        "link",
-        d3.forceLink<SimNode, SimLink>([])
-          .id(d => d.id)
-          .distance(d => (d as SimLink).isSynthesisLink ? 280 : 190)
-          .strength(d => (d as SimLink).isSynthesisLink ? 0.03 : 0.25)
-      )
-      .force("charge", d3.forceManyBody<SimNode>().strength(d => d.isSynthesis ? -800 : -500))
-      .force("center",  d3.forceCenter(w / 2, h / 2).strength(0.03))
-      .force("collide", d3.forceCollide<SimNode>().radius(d => getNodeRadius(d) + 40).strength(0.8))
-      .alphaDecay(0.015)
-      .velocityDecay(0.35)
-      .on("tick", () => forceUpdate())
-      .stop()
-    return () => { simRef.current?.stop() }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const cx = dims.w / 2
+  const cy = dims.h / 2
 
-  // ── Update nodes/links when blocks change (no full restart) ────────────
-  React.useEffect(() => {
-    const sim = simRef.current
-    if (!sim) return
+  // ── Layout ───────────────────────────────────────────────────────────────
+  const nodes = React.useMemo(
+    () => computeNodes(blocks, ghostNote, cx, cy, Math.min(dims.w, dims.h)),
+    [blocks, ghostNote, cx, cy, dims.w, dims.h],
+  )
 
-    const cx = dimsRef.current.w / 2
-    const cy = dimsRef.current.h / 2
-    const prevCount = nodesRef.current.length
+  const edges = React.useMemo(
+    () => buildEdges(nodes, blocks),
+    [nodes, blocks],
+  )
 
-    const { nodes, links } = buildGraph(blocks, ghostNote, nodesRef.current)
-
+  // ── New-node animation ────────────────────────────────────────────────────
+  // Nodes not yet in knownIds start at centre and transition out after one rAF
+  const newNodeIds = React.useMemo(() => {
+    const s = new Set<string>()
     for (const n of nodes) {
-      // Seed position for brand-new nodes
-      if (n.x === undefined) {
-        n.x = cx + (Math.random() - 0.5) * 100
-        n.y = cy + (Math.random() - 0.5) * 100
-      }
-      // Fix enriching nodes at a stable staging position near center
-      // so they don't fly around while awaiting AI results
-      if (n.block?.isEnriching) {
-        if (n.fx == null) {
-          n.fx = cx + (Math.random() - 0.5) * 50
-          n.fy = cy + (Math.random() - 0.5) * 50
-        }
-        // Keep velocity zeroed so the node is truly still
-        n.vx = 0
-        n.vy = 0
-      } else {
-        // Enrichment finished — release the fix so it can integrate gracefully
-        n.fx = null
-        n.fy = null
+      if (!n.isCenter && !knownIds.has(n.id)) s.add(n.id)
+    }
+    return s
+  }, [nodes, knownIds])
+
+  React.useEffect(() => {
+    if (newNodeIds.size === 0) return
+    const raf = requestAnimationFrame(() => {
+      setKnownIds(prev => {
+        const next = new Set(prev)
+        for (const id of newNodeIds) next.add(id)
+        return next
+      })
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [newNodeIds])
+
+  // ── Hover: connected IDs ─────────────────────────────────────────────────
+  const connectedToHovered = React.useMemo(() => {
+    if (!hoveredId) return null
+    const ids = new Set<string>([hoveredId, "__center__"])
+    if (nodes.find(n => n.id === hoveredId)?.isSynthesis) {
+      // synthesis connects to everything
+      for (const n of nodes) ids.add(n.id)
+    } else {
+      const b = blocks.find(x => x.id === hoveredId)
+      if (b?.influencedBy) for (const id of b.influencedBy) ids.add(id)
+      for (const x of blocks) {
+        if (x.influencedBy?.includes(hoveredId)) ids.add(x.id)
       }
     }
+    return ids
+  }, [hoveredId, blocks, nodes])
 
-    nodesRef.current = nodes
-    linksRef.current = links
-
-    // Update simulation in-place — no full restart
-    sim.nodes(nodesRef.current)
-    ;(sim.force("link") as d3.ForceLink<SimNode, SimLink>).links(linksRef.current)
-
-    // New node added → moderate energy; enrichment completed → gentle reheat
-    const isNewNode = nodes.length > prevCount
-    sim.alpha(isNewNode ? 0.4 : 0.2).restart()
-
-  }, [blocks, ghostNote]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Re-centre force when container resizes ──────────────────────────────
-  React.useEffect(() => {
-    const cf = simRef.current?.force<d3.ForceCenter<SimNode>>("center")
-    if (cf) cf.x(dims.w / 2).y(dims.h / 2)
-  }, [dims])
-
-  // ── Zoom (wheel) ────────────────────────────────────────────────────────
+  // ── Zoom ─────────────────────────────────────────────────────────────────
   const handleWheel = React.useCallback((e: React.WheelEvent) => {
     e.preventDefault()
     const factor = e.deltaY < 0 ? 1.1 : 0.9
-    const rect   = svgRef.current!.getBoundingClientRect()
-    const cx     = e.clientX - rect.left
-    const cy     = e.clientY - rect.top
+    const rect = svgRef.current!.getBoundingClientRect()
+    const mx = e.clientX - rect.left
+    const my = e.clientY - rect.top
     setTransform(t => {
-      const k = Math.max(0.25, Math.min(4, t.k * factor))
-      return { x: cx - (cx - t.x) * (k / t.k), y: cy - (cy - t.y) * (k / t.k), k }
+      const k = Math.max(0.2, Math.min(4, t.k * factor))
+      return { x: mx - (mx - t.x) * (k / t.k), y: my - (my - t.y) * (k / t.k), k }
     })
   }, [])
 
-  // ── Pan ─────────────────────────────────────────────────────────────────
+  // ── Pan ──────────────────────────────────────────────────────────────────
   const handleSvgMouseDown = React.useCallback((e: React.MouseEvent<SVGSVGElement>) => {
     if ((e.target as Element).closest(".graph-node")) return
     isPanning.current = true
@@ -236,87 +281,36 @@ export function GraphArea({
   }, [transform])
 
   const handleSvgMouseMove = React.useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    if (draggedNode.current && simRef.current) {
-      const rect = svgRef.current!.getBoundingClientRect()
-      const wx   = (e.clientX - rect.left - transform.x) / transform.k
-      const wy   = (e.clientY - rect.top  - transform.y) / transform.k
-      draggedNode.current.fx = wx
-      draggedNode.current.fy = wy
-      simRef.current.alphaTarget(0.3).restart()
-      return
-    }
     if (!isPanning.current) return
-    const dx = e.clientX - panStart.current.mx
-    const dy = e.clientY - panStart.current.my
-    setTransform(t => ({ ...t, x: panStart.current.tx + dx, y: panStart.current.ty + dy }))
-  }, [transform])
-
-  const handleSvgMouseUp = React.useCallback(() => {
-    isPanning.current = false
-    if (draggedNode.current && simRef.current) {
-      draggedNode.current.fx = null
-      draggedNode.current.fy = null
-      simRef.current.alphaTarget(0)
-      draggedNode.current = null
-    }
+    setTransform(t => ({
+      ...t,
+      x: panStart.current.tx + (e.clientX - panStart.current.mx),
+      y: panStart.current.ty + (e.clientY - panStart.current.my),
+    }))
   }, [])
 
-  // ── Node drag start ─────────────────────────────────────────────────────
-  const handleNodeMouseDown = React.useCallback((e: React.MouseEvent, node: SimNode) => {
-    e.stopPropagation()
-    draggedNode.current = node
-    if (simRef.current) simRef.current.alphaTarget(0.3).restart()
-  }, [])
+  const handleSvgMouseUp = React.useCallback(() => { isPanning.current = false }, [])
 
-  // ── Node click (select) ─────────────────────────────────────────────────
-  const handleNodeClick = React.useCallback((e: React.MouseEvent, node: SimNode) => {
-    e.stopPropagation()
-    setSelectedId(prev => prev === node.id ? null : node.id)
-  }, [])
-
-  const handleSvgClick = React.useCallback(() => {
-    setSelectedId(null)
-  }, [])
-
-  // ── Derived state ────────────────────────────────────────────────────────
-  const selectedBlock  = React.useMemo(
+  // ── Selected block ────────────────────────────────────────────────────────
+  const selectedBlock = React.useMemo(
     () => blocks.find(b => b.id === selectedId) ?? null,
-    [blocks, selectedId]
+    [blocks, selectedId],
   )
 
-  // IDs that are connected to the hovered node (for dimming)
-  const connectedToHovered = React.useMemo(() => {
-    if (!hoveredId) return null
-    const ids = new Set<string>([hoveredId])
-    for (const l of linksRef.current) {
-      const s = typeof l.source === "object" ? (l.source as SimNode).id : l.source as string
-      const t = typeof l.target === "object" ? (l.target as SimNode).id : l.target as string
-      if (s === hoveredId) ids.add(t)
-      if (t === hoveredId) ids.add(s)
-    }
-    return ids
-  }, [hoveredId])
-
-  // ── Render ───────────────────────────────────────────────────────────────
-
-  const graphWidth = selectedId ? "70%" : "100%"
-
-  const { x: tx, y: ty, k: tk } = transform
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="flex h-full w-full overflow-hidden bg-background">
 
-      {/* ── Graph canvas ───────────────────────────────────────────────── */}
+      {/* Graph canvas */}
       <div
         ref={containerRef}
-        style={{ width: graphWidth }}
+        style={{ width: selectedId ? "70%" : "100%" }}
         className="relative h-full transition-all duration-300 overflow-hidden"
       >
-        {/* Empty state */}
         {blocks.length === 0 && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/30">
-              No nodes yet — add notes to see the graph
+              no nodes yet — add notes to see the graph
             </p>
           </div>
         )}
@@ -332,10 +326,9 @@ export function GraphArea({
           onMouseMove={handleSvgMouseMove}
           onMouseUp={handleSvgMouseUp}
           onMouseLeave={handleSvgMouseUp}
-          onClick={handleSvgClick}
+          onClick={() => setSelectedId(null)}
         >
           <defs>
-            {/* Synthesis glow filter */}
             <filter id="glow-synthesis" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="6" result="blur" />
               <feMerge>
@@ -343,49 +336,43 @@ export function GraphArea({
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
-            {/* Enriching pulse filter */}
-            <filter id="glow-enrich" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-            {/* Synthesis gradient */}
             <radialGradient id="synthesis-gradient" cx="50%" cy="50%" r="50%">
               <stop offset="0%"   stopColor="var(--type-thesis)" stopOpacity="1" />
               <stop offset="100%" stopColor="var(--type-claim)"  stopOpacity="0.8" />
             </radialGradient>
           </defs>
 
-          <g transform={`translate(${tx},${ty}) scale(${tk})`}>
+          <g transform={`translate(${transform.x},${transform.y}) scale(${transform.k})`}>
 
-            {/* ── Links ──────────────────────────────────────────────────── */}
+            {/* ── Edges ──────────────────────────────────────────────────── */}
             <g>
-              {linksRef.current.map((link, i) => {
-                const s = link.source as SimNode
-                const t = link.target as SimNode
-                if (s.x == null || t.x == null) return null
+              {edges.map(edge => {
+                const dimmed = hoveredId != null &&
+                  edge.sourceId !== hoveredId &&
+                  edge.targetId !== hoveredId
 
-                const isSynthLink = link.isSynthesisLink
-                const isHighlighted = hoveredId && connectedToHovered &&
-                  connectedToHovered.has(s.id) && connectedToHovered.has(t.id)
-                const isDimmed = hoveredId && !isHighlighted
+                const highlighted = hoveredId != null && !dimmed && !edge.isSpoke
+
+                const d = edge.isSpoke
+                  ? `M ${edge.sx} ${edge.sy} L ${edge.tx} ${edge.ty}`
+                  : chordPath(edge.sx, edge.sy, edge.tx, edge.ty, cx, cy)
 
                 return (
-                  <line
-                    key={i}
-                    x1={s.x} y1={s.y}
-                    x2={t.x} y2={t.y}
+                  <path
+                    key={edge.id}
+                    d={d}
                     stroke="white"
-                    strokeWidth={isSynthLink ? 0.5 : 1.2}
-                    strokeDasharray={isSynthLink ? "3 5" : undefined}
+                    strokeWidth={edge.isSpoke ? 0.7 : 1.6}
+                    strokeDasharray={edge.isSynth ? "4 6" : undefined}
                     strokeOpacity={
-                      isSynthLink
-                        ? (isDimmed ? 0.02 : 0.06)
-                        : (isDimmed ? 0.04 : isHighlighted ? 0.6 : 0.18)
+                      dimmed      ? 0.02 :
+                      highlighted ? 0.75 :
+                      edge.isSpoke
+                        ? (hoveredId === edge.targetId ? 0.4 : 0.09)
+                        : 0.28
                     }
-                    style={{ transition: "stroke-opacity 0.2s" }}
+                    fill="none"
+                    style={{ transition: "stroke-opacity 0.15s" }}
                   />
                 )
               })}
@@ -393,49 +380,49 @@ export function GraphArea({
 
             {/* ── Nodes ──────────────────────────────────────────────────── */}
             <g>
-              {nodesRef.current.map(node => {
-                if (node.x == null || node.y == null) return null
-
+              {nodes.map(node => {
                 const isSelected  = node.id === selectedId
                 const isHovered   = node.id === hoveredId
-                const isDimmed    = hoveredId != null && !isHovered &&
+                const isDimmed    = hoveredId != null && !node.isCenter && !isHovered &&
                   (!connectedToHovered || !connectedToHovered.has(node.id))
-                const r = getNodeRadius(node)
-
-                // Color
-                let fillColor: string
-                if (node.isSynthesis) {
-                  fillColor = "url(#synthesis-gradient)"
-                } else {
-                  const config = CONTENT_TYPE_CONFIG[node.block!.contentType]
-                  fillColor = config.accentVar
-                }
-
                 const isEnriching = node.block?.isEnriching
+                const isNew       = newNodeIds.has(node.id)
 
+                // New nodes start at centre; CSS transition moves them to ring position
+                const nx = isNew ? cx : node.x
+                const ny = isNew ? cy : node.y
+
+                const r = node.isCenter ? CENTER_R : node.isSynthesis ? SYNTH_R : NODE_R
                 const config = node.block ? CONTENT_TYPE_CONFIG[node.block.contentType] : null
                 const Icon   = config?.icon ?? null
+                const accent = config?.accentVar ?? "var(--type-thesis)"
 
-                // Hover label: first ~40 chars of text
-                const labelText = node.isSynthesis
-                  ? truncate(node.synthesisText ?? "Synthesis", 44)
-                  : truncate(node.block?.text ?? "", 44)
+                let fill = "transparent"
+                if (node.isCenter)    fill = "rgba(255,255,255,0.04)"
+                else if (node.isSynthesis) fill = "url(#synthesis-gradient)"
+                else if (config)      fill = config.accentVar
 
                 return (
                   <g
                     key={node.id}
-                    transform={`translate(${node.x},${node.y})`}
                     className="graph-node"
                     style={{
-                      opacity: isDimmed ? 0.15 : 1,
-                      filter: isEnriching ? "url(#glow-enrich)" : node.isSynthesis ? "url(#glow-synthesis)" : undefined,
-                      transition: "opacity 0.2s",
-                      cursor: "pointer",
+                      transform: `translate(${nx}px, ${ny}px)`,
+                      transition: isNew
+                        ? "none"
+                        : "transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s",
+                      opacity:    isDimmed ? 0.1 : 1,
+                      filter:     node.isSynthesis ? "url(#glow-synthesis)" : undefined,
+                      cursor:     node.isCenter ? "default" : "pointer",
                     }}
-                    onMouseDown={e => handleNodeMouseDown(e, node)}
-                    onClick={e => handleNodeClick(e, node)}
+                    onClick={e => {
+                      e.stopPropagation()
+                      if (!node.isCenter) {
+                        setSelectedId(prev => prev === node.id ? null : node.id)
+                      }
+                    }}
                     onMouseEnter={e => {
-                      setHoveredId(node.id)
+                      if (!node.isCenter) setHoveredId(node.id)
                       const rect = svgRef.current!.getBoundingClientRect()
                       setTooltip({ id: node.id, x: e.clientX - rect.left, y: e.clientY - rect.top })
                     }}
@@ -445,75 +432,106 @@ export function GraphArea({
                     }}
                     onMouseLeave={() => { setHoveredId(null); setTooltip(null) }}
                   >
-                    {/* Selected / hovered outer ring */}
-                    {(isSelected || isHovered) && (
+                    {/* Centre: decorative outer ring */}
+                    {node.isCenter && (
                       <circle
-                        r={r + 7}
+                        r={CENTER_R + 10}
                         fill="none"
-                        stroke={node.isSynthesis ? "var(--type-thesis)" : config?.accentVar ?? "white"}
-                        strokeWidth={isSelected ? 1.5 : 1}
-                        strokeOpacity={isSelected ? 0.7 : 0.3}
+                        stroke="white"
+                        strokeWidth={0.5}
+                        strokeOpacity={0.07}
                       />
                     )}
 
-                    {/* Enriching ring animation */}
+                    {/* Selected / hovered ring */}
+                    {(isSelected || isHovered) && !node.isCenter && (
+                      <circle
+                        r={r + 9}
+                        fill="none"
+                        stroke={accent}
+                        strokeWidth={isSelected ? 1.5 : 1}
+                        strokeOpacity={isSelected ? 0.65 : 0.3}
+                      />
+                    )}
+
+                    {/* Enriching: spinning dashed ring
+                        transformBox:fill-box ensures rotation around THIS element's centre,
+                        not the SVG viewport origin (which caused the giant background circle) */}
                     {isEnriching && (
                       <circle
-                        r={r + 12}
+                        r={r + 13}
                         fill="none"
-                        stroke={config?.accentVar ?? "white"}
-                        strokeWidth={1}
-                        strokeDasharray="3 4"
-                        strokeOpacity={0.45}
-                        style={{ animation: "spin 3s linear infinite", transformOrigin: "center" }}
+                        stroke={accent}
+                        strokeWidth={1.2}
+                        strokeDasharray="5 4"
+                        strokeOpacity={0.55}
+                        style={{
+                          transformBox: "fill-box" as React.CSSProperties["transformBox"],
+                          transformOrigin: "center",
+                          animation: "spin 2.5s linear infinite",
+                        }}
                       />
                     )}
 
-                    {/* Synthesis pulse rings */}
+                    {/* Synthesis halo */}
                     {node.isSynthesis && (
                       <>
-                        <circle r={r + 14} fill="none" stroke="var(--type-thesis)" strokeWidth={0.5} strokeOpacity={0.15} />
-                        <circle r={r + 22} fill="none" stroke="var(--type-thesis)" strokeWidth={0.5} strokeOpacity={0.07} />
+                        <circle r={r + 15} fill="none" stroke="var(--type-thesis)" strokeWidth={0.5} strokeOpacity={0.14} />
+                        <circle r={r + 27} fill="none" stroke="var(--type-thesis)" strokeWidth={0.5} strokeOpacity={0.06} />
                       </>
                     )}
 
                     {/* Main circle */}
                     <circle
                       r={r}
-                      fill={fillColor}
-                      fillOpacity={isSelected ? 1 : isHovered ? 0.95 : 0.9}
-                      stroke={isSelected ? (node.isSynthesis ? "var(--type-thesis)" : config?.accentVar ?? "white") : "none"}
-                      strokeWidth={isSelected ? 1.5 : 0}
+                      fill={fill}
+                      fillOpacity={
+                        node.isCenter   ? 1 :
+                        node.isSynthesis ? 1 :
+                        isSelected      ? 1.0 :
+                        isHovered       ? 0.96 : 0.90
+                      }
+                      stroke={
+                        node.isCenter ? "rgba(255,255,255,0.13)" :
+                        isSelected    ? accent : "none"
+                      }
+                      strokeWidth={node.isCenter ? 1 : isSelected ? 1.5 : 0}
                     />
 
-                    {/* Icon inside node via foreignObject */}
+                    {/* Block icon */}
                     {Icon && (
-                      <foreignObject
-                        x={-13} y={-13}
-                        width={26} height={26}
-                        style={{ pointerEvents: "none", overflow: "visible" }}
-                      >
+                      <foreignObject x={-14} y={-14} width={28} height={28} style={{ pointerEvents: "none" }}>
                         <div
-                          // @ts-ignore – xmlns required for foreignObject HTML
+                          // @ts-ignore – xmlns required for foreignObject
                           xmlns="http://www.w3.org/1999/xhtml"
-                          style={{
-                            width: 26, height: 26,
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                          }}
+                          style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center" }}
                         >
-                          <Icon style={{ width: 14, height: 14, color: "white", opacity: 0.95 }} />
+                          <Icon style={{ width: 15, height: 15, color: "white", opacity: 0.92 }} />
                         </div>
                       </foreignObject>
                     )}
 
-                    {/* Synthesis "S" label */}
+                    {/* Centre: project name label below circle */}
+                    {node.isCenter && (
+                      <text
+                        y={CENTER_R + 17}
+                        textAnchor="middle"
+                        fontSize={10}
+                        fontFamily="monospace"
+                        fill="white"
+                        fillOpacity={0.32}
+                        style={{ pointerEvents: "none", userSelect: "none" }}
+                      >
+                        {projectName.length > 18 ? projectName.slice(0, 18) + "…" : projectName}
+                      </text>
+                    )}
+
+                    {/* Synthesis glyph */}
                     {node.isSynthesis && (
                       <text
                         textAnchor="middle"
                         dominantBaseline="central"
-                        fontSize={11}
-                        fontFamily="monospace"
-                        fontWeight="bold"
+                        fontSize={13}
                         fill="white"
                         fillOpacity={0.9}
                         style={{ pointerEvents: "none" }}
@@ -532,15 +550,14 @@ export function GraphArea({
 
         {/* ── Floating tooltip ──────────────────────────────────────────── */}
         {tooltip && (() => {
-          const node = nodesRef.current.find(n => n.id === tooltip.id)
-          if (!node) return null
+          const node = nodes.find(n => n.id === tooltip.id)
+          if (!node || node.isCenter) return null
           const label = node.isSynthesis
             ? (node.synthesisText ?? "Synthesis")
             : (node.block?.text ?? "")
           const config = node.block ? CONTENT_TYPE_CONFIG[node.block.contentType] : null
           const accent = config?.accentVar ?? "var(--type-thesis)"
-          // Position tooltip above cursor, shift left if near right edge
-          const tipX = Math.min(tooltip.x + 12, (selectedId ? dims.w * 0.7 : dims.w) - 280)
+          const tipX = Math.min(tooltip.x + 12, (selectedId ? dims.w * 0.7 : dims.w) - 296)
           const tipY = tooltip.y - 16
           return (
             <div
@@ -549,34 +566,26 @@ export function GraphArea({
             >
               <div
                 className="rounded-sm shadow-[0_4px_24px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden"
-                style={{ minWidth: 180, maxWidth: 280 }}
+                style={{ minWidth: 180, maxWidth: 290 }}
               >
-                {/* Coloured header bar */}
-                <div
-                  className="flex items-center gap-2 px-2.5 py-1.5"
-                  style={{ background: accent }}
-                >
+                <div className="flex items-center gap-2 px-2.5 py-1.5" style={{ background: accent }}>
                   {config?.icon && React.createElement(config.icon, {
                     className: "h-3 w-3 flex-shrink-0",
-                    style: { color: "black", opacity: 0.7 }
+                    style: { color: "black", opacity: 0.7 },
                   })}
                   <span className="font-mono text-[9px] font-black uppercase tracking-widest text-black/70">
                     {node.isSynthesis ? "Synthesis" : config?.label}
                   </span>
                   {node.block?.category && (
-                    <span className="ml-auto font-mono text-[8px] text-black/50 truncate max-w-[80px]">
+                    <span className="ml-auto font-mono text-[8px] text-black/50 truncate max-w-[90px]">
                       {node.block.category}
                     </span>
                   )}
                 </div>
-                {/* Full text body */}
-                <div className="bg-card/95 backdrop-blur-sm px-3 py-2">
-                  <p className="text-sm font-semibold leading-relaxed text-foreground">
-                    {label}
-                  </p>
+                <div className="bg-card/95 backdrop-blur-sm px-3 py-2.5">
+                  <p className="text-sm font-semibold leading-snug text-foreground">{label}</p>
                 </div>
               </div>
-              {/* Arrow tip */}
               <div
                 className="mx-4 h-2 w-2 rotate-45 border-b border-r border-white/10 bg-card/95"
                 style={{ marginTop: -1 }}
@@ -585,14 +594,13 @@ export function GraphArea({
           )
         })()}
 
-        {/* Zoom hints */}
-        <div className="absolute bottom-4 left-4 flex items-center gap-2 pointer-events-none">
+        {/* Hints */}
+        <div className="absolute bottom-4 left-4 pointer-events-none">
           <span className="font-mono text-[8px] text-muted-foreground/25 uppercase tracking-widest">
             scroll to zoom · drag to pan · click node to inspect
           </span>
         </div>
 
-        {/* Node count */}
         {blocks.length > 0 && (
           <div className="absolute top-4 left-4 pointer-events-none">
             <span className="font-mono text-[8px] text-muted-foreground/25 uppercase tracking-widest">
@@ -601,6 +609,7 @@ export function GraphArea({
             </span>
           </div>
         )}
+
       </div>
 
       {/* ── Detail panel (30%) ─────────────────────────────────────────────── */}

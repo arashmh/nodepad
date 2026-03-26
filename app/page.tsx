@@ -881,6 +881,7 @@ export default function Page() {
                   key={`graph-${activeProjectId}`}
                   blocks={activeProject.blocks}
                   ghostNote={activeProject.ghostNote}
+                  projectName={activeProject.name}
                   onReEnrich={reEnrichBlock}
                   onTogglePin={handleTogglePin}
                   onEdit={editBlock}
