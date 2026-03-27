@@ -92,6 +92,9 @@ export function AboutPanel({ open, onClose }: AboutPanelProps) {
               Saleh Kayyali
             </a>
           </p>
+          <p className="mt-1.5 text-xs text-muted-foreground/35">
+            This app uses anonymous analytics (Umami) to track feature interactions — views switched, exports, synthesis events. No note content, no personal data, no cross-site tracking.
+          </p>
         </div>
 
         {/* Scrollable body */}

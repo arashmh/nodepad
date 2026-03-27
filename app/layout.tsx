@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono, Vazirmatn } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
 import { MobileWall } from '@/components/mobile-wall'
 import './globals.css'
 
@@ -41,10 +40,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script defer src="https://cloud.umami.is/script.js" data-website-id="334833bb-9911-4ddb-b3f2-6df25795cd0e" />
+      </head>
       <body className={`font-sans antialiased ${vazirmatn.variable}`} suppressHydrationWarning>
         <MobileWall />
         {children}
-        <Analytics />
       </body>
     </html>
   )

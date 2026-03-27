@@ -289,28 +289,28 @@ export function TilingArea({
         ) : (
           !taskBlock && (
             <div className="flex h-[80vh] w-full items-center justify-center">
-              <div className="flex flex-col items-center gap-10 w-[320px]">
-                <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-foreground/40">spatial research workspace</p>
+              <div className="flex flex-col items-center gap-8 w-[420px]">
+                <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-foreground/35">spatial research workspace</p>
 
-                <div className="flex flex-col gap-4 w-full">
+                <div className="flex flex-col gap-5 w-full">
                   {([
-                    { color: "var(--type-question)", label: "question", text: "Does consciousness require a physical substrate?" },
-                    { color: "var(--type-claim)",    label: "#claim",   text: "Caffeine improves short-term recall by ~15%" },
+                    { color: "var(--type-question)", label: "question", text: "Does consciousness require a period of genuine solitude?" },
+                    { color: "var(--type-claim)",    label: "claim",    text: "Caffeine improves short-term recall by ~15%" },
                     { color: "var(--type-quote)",    label: "quote",    text: "Attention is the rarest form of generosity — Simone Weil" },
                     { color: "var(--type-task)",     label: "task",     text: "Review papers on distributed consensus" },
                   ] as const).map(({ color, label, text }) => (
-                    <div key={label} className="flex items-start gap-3">
-                      <div className="w-0.5 self-stretch rounded-full shrink-0" style={{ background: color }} />
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-mono text-[9px] uppercase tracking-[0.15em]" style={{ color }}>{label}</span>
-                        <p className="font-mono text-[11px] leading-relaxed text-foreground/55">{text}</p>
+                    <div key={label} className="flex items-start gap-4">
+                      <div className="w-0.5 self-stretch rounded-full shrink-0 mt-0.5" style={{ background: color }} />
+                      <div className="flex flex-col gap-1">
+                        <span className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color }}>{label}</span>
+                        <p className="font-mono text-[13px] leading-snug text-white">{text}</p>
                       </div>
                     </div>
                   ))}
                 </div>
 
                 {!hasApiKey && (
-                  <div className="flex flex-col gap-2 rounded-sm border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2.5">
+                  <div className="flex flex-col gap-2 rounded-sm border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2.5 w-full">
                     <p className="font-mono text-[9px] text-amber-400/80 leading-relaxed">
                       AI enrichment is inactive — no OpenRouter API key configured.
                     </p>
@@ -334,7 +334,7 @@ export function TilingArea({
                   </div>
                 )}
 
-                <p className="font-mono text-[9px] text-foreground/30 uppercase tracking-[0.2em] text-center">
+                <p className="font-mono text-[11px] text-white/30 uppercase tracking-[0.15em] whitespace-nowrap">
                   type anything · #type to classify · ⌘K for commands
                 </p>
               </div>

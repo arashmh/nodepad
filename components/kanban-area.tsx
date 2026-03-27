@@ -173,28 +173,28 @@ export function KanbanArea({
         
         {blocks.length === 0 && (
           <div className="flex-1 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-10 w-[320px]">
-              <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-foreground/40">type-grouped board view</p>
+            <div className="flex flex-col items-center gap-8 w-[420px]">
+              <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-foreground/35">type-grouped board view</p>
 
-              <div className="flex flex-col gap-4 w-full">
+              <div className="flex flex-col gap-5 w-full">
                 {([
-                  { color: "var(--type-task)",     label: "tasks",     hint: "anything action-oriented" },
-                  { color: "var(--type-claim)",    label: "claims",    hint: "assertions the AI annotates + scores" },
-                  { color: "var(--type-question)", label: "questions", hint: "open threads and unknowns" },
-                  { color: "var(--type-idea)",     label: "ideas",     hint: "raw concepts and hunches" },
+                  { color: "var(--type-task)",     label: "task",     hint: "Review papers on distributed consensus" },
+                  { color: "var(--type-claim)",    label: "claim",    hint: "Caffeine improves short-term recall by ~15%" },
+                  { color: "var(--type-question)", label: "question", hint: "Does creativity require periods of solitude?" },
+                  { color: "var(--type-idea)",     label: "idea",     hint: "What if collaboration refines, not generates, original thought?" },
                 ] as const).map(({ color, label, hint }) => (
-                  <div key={label} className="flex items-center gap-3">
-                    <div className="w-0.5 h-8 rounded-full shrink-0" style={{ background: color }} />
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-mono text-[9px] uppercase tracking-[0.15em]" style={{ color }}>{label}</span>
-                      <p className="font-mono text-[10px] text-foreground/55">{hint}</p>
+                  <div key={label} className="flex items-start gap-4">
+                    <div className="w-0.5 self-stretch rounded-full shrink-0 mt-0.5" style={{ background: color }} />
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color }}>{label}</span>
+                      <p className="font-mono text-[13px] leading-snug text-white">{hint}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
               {!hasApiKey && (
-                <div className="flex flex-col gap-2 rounded-sm border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2.5">
+                <div className="flex flex-col gap-2 rounded-sm border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2.5 w-full">
                   <p className="font-mono text-[9px] text-amber-400/80 leading-relaxed">
                     AI enrichment is inactive — no OpenRouter API key configured.
                   </p>
@@ -218,7 +218,7 @@ export function KanbanArea({
                 </div>
               )}
 
-              <p className="font-mono text-[9px] text-foreground/30 uppercase tracking-[0.2em] text-center">
+              <p className="font-mono text-[11px] text-white/30 uppercase tracking-[0.15em] whitespace-nowrap">
                 type anything · #type to classify · ⌘K for commands
               </p>
             </div>

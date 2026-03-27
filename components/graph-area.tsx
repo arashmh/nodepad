@@ -397,9 +397,30 @@ export function GraphArea({
       >
         {blocks.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/25">
-              no nodes yet — add notes to build the graph
-            </p>
+            <div className="flex flex-col items-center gap-8 w-[420px]">
+              <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-foreground/35">force-directed graph view</p>
+
+              <div className="flex flex-col gap-5 w-full">
+                {([
+                  { color: "var(--type-claim)",    label: "claim",    text: "Caffeine improves short-term recall by ~15%" },
+                  { color: "var(--type-entity)",   label: "entity",   text: "Adam Grant — organisational psychologist" },
+                  { color: "var(--type-question)", label: "question", text: "Does creativity require periods of solitude?" },
+                  { color: "var(--type-idea)",     label: "idea",     text: "Collaboration refines ideas, solitude generates them" },
+                ] as const).map(({ color, label, text }) => (
+                  <div key={label} className="flex items-start gap-4">
+                    <div className="w-0.5 self-stretch rounded-full shrink-0 mt-0.5" style={{ background: color }} />
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color }}>{label}</span>
+                      <p className="font-mono text-[13px] leading-snug text-white">{text}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="font-mono text-[11px] text-white/30 uppercase tracking-[0.15em] whitespace-nowrap">
+                type anything · #type to classify · ⌘K for commands
+              </p>
+            </div>
           </div>
         )}
 
