@@ -106,8 +106,6 @@ export const TileCard = memo(function TileCard({
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(block.text)
   const [isHovered, setIsHovered] = useState(false)
-  const [isEditingCategory, setIsEditingCategory] = useState(false)
-  const [categoryText, setCategoryText] = useState(block.category || "")
   const [isEditingAnnotation, setIsEditingAnnotation] = useState(false)
   const [editAnnotation, setEditAnnotation] = useState(block.annotation || "")
   const [isMounted, setIsMounted] = useState(false)
@@ -116,7 +114,6 @@ export const TileCard = memo(function TileCard({
   const [isTypePickerOpen, setIsTypePickerOpen] = useState(false)
   const typePickerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const categoryInputRef = useRef<HTMLInputElement>(null)
   const annotationRef = useRef<HTMLTextAreaElement>(null)
   const footerRef = useRef<HTMLDivElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
@@ -148,13 +145,6 @@ export const TileCard = memo(function TileCard({
       el.style.height = el.scrollHeight + 'px'
     }
   }, [isEditing])
-
-  useEffect(() => {
-    if (isEditingCategory && categoryInputRef.current) {
-      categoryInputRef.current.focus()
-      categoryInputRef.current.select()
-    }
-  }, [isEditingCategory])
 
   // Auto-size + focus for annotation editing textarea
   useEffect(() => {
@@ -205,27 +195,6 @@ export const TileCard = memo(function TileCard({
       }
     },
     [handleSave, block.text]
-  )
-
-  const handleCategorySave = useCallback(() => {
-    if (categoryText !== block.category) {
-      onReEnrich(block.id, categoryText)
-    }
-    setIsEditingCategory(false)
-  }, [categoryText, block.id, block.category, onReEnrich])
-
-  const handleCategoryKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter") {
-        e.preventDefault()
-        handleCategorySave()
-      }
-      if (e.key === "Escape") {
-        setCategoryText(block.category || "")
-        setIsEditingCategory(false)
-      }
-    },
-    [handleCategorySave, block.category]
   )
 
   const handleAnnotationSave = useCallback(() => {
@@ -671,74 +640,56 @@ export const TileCard = memo(function TileCard({
             >
               <div className={`flex items-start justify-between px-3 py-2 ${isFooterExpanded ? 'gap-3' : 'items-center'}`}>
                 <div className={`flex flex-1 items-start gap-2 overflow-hidden ${isFooterExpanded ? 'flex-wrap' : ''}`}>
-                  {isEditingCategory ? (
-                    <input
-                      ref={categoryInputRef}
-                      type="text"
-                      value={categoryText}
-                      onChange={(e) => setCategoryText(e.target.value)}
-                      onKeyDown={handleCategoryKeyDown}
-                      onBlur={handleCategorySave}
-                      className="w-24 bg-primary/30 rounded-sm font-mono text-[10px] px-2 py-0.5 font-bold focus:outline-none border border-primary/50 text-white shadow-[0_0_10px_rgba(255,255,255,0.05)]"
-                      style={{ color: accent }}
-                      placeholder="Topic..."
-                      autoFocus
-                    />
-                  ) : (
-                    <div className={`flex items-start gap-2 overflow-hidden ${isFooterExpanded ? 'flex-wrap mb-1' : ''}`}>
-                      <button
-                        onClick={() => {
-                          setCategoryText(block.category || "")
-                          setIsEditingCategory(true)
-                        }}
-                        className="rounded-sm px-2 py-0.5 font-mono text-[10px] font-bold transition-all hover:brightness-125 cursor-text flex items-center gap-1.5 shadow-sm shrink-0"
-                        style={{
-                          background: `color-mix(in oklch, ${accent} 35%, transparent)`,
-                          color: "white",
-                          border: `1px solid color-mix(in oklch, ${accent} 50%, transparent)`
-                        }}
-                      >
-                        <span className="opacity-70">#</span>
-                        <span className="truncate max-w-[120px]">{block.category || "no-topic"}</span>
-                      </button>
+                  <div className={`flex items-start gap-2 overflow-hidden ${isFooterExpanded ? 'flex-wrap mb-1' : ''}`}>
+                    {/* Category tag — read-only, updated by AI on enrichment */}
+                    <span
+                      className="rounded-sm px-2 py-0.5 font-mono text-[10px] font-bold flex items-center gap-1.5 shadow-sm shrink-0"
+                      style={{
+                        background: `color-mix(in oklch, ${accent} 35%, transparent)`,
+                        color: "white",
+                        border: `1px solid color-mix(in oklch, ${accent} 50%, transparent)`
+                      }}
+                    >
+                      <span className="opacity-70">#</span>
+                      <span className="truncate max-w-[120px]">{block.category || "no-topic"}</span>
+                    </span>
 
-                      {block.influencedBy && block.influencedBy.length > 0 && (
-                        <div className="group/influences relative">
-                          <div 
-                            className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-primary/10 border border-primary/20 cursor-help transition-all hover:bg-primary/20"
-                            onMouseEnter={() => block.influencedBy?.forEach(id => onHighlight?.(id))}
-                            onMouseLeave={() => block.influencedBy?.forEach(() => onHighlight?.(null))}
-                          >
-                            <Sparkles className="h-2.5 w-2.5 text-primary" />
-                            <span className="font-mono text-[9px] font-bold text-primary uppercase tracking-tighter">
-                              {block.influencedBy.length} {block.influencedBy.length === 1 ? 'Link' : 'Links'}
-                            </span>
-                          </div>
-                          
-                          {/* Hover Tooltip */}
-                          <div className="absolute bottom-full left-0 mb-2 w-56 p-2 rounded-sm bg-black/90 backdrop-blur-md border border-white/10 shadow-xl opacity-0 translate-y-2 pointer-events-none group-hover/influences:opacity-100 group-hover/influences:translate-y-0 transition-all z-[100]">
-                            <h5 className="font-mono text-[8px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 border-b border-white/5 pb-1">Connected nodes</h5>
-                            <div className="flex flex-col gap-1">
-                              {block.influencedBy.slice(0, 5).map((id, i) => {
-                                const linked = allBlocks?.find(b => b.id === id)
-                                return (
-                                  <div key={i} className="flex items-start gap-2 overflow-hidden">
-                                    <div className="h-1 w-1 rounded-full bg-primary shrink-0 mt-1" />
-                                    <span className="font-mono text-[9px] text-foreground/70 truncate leading-tight">
-                                      {linked ? linked.text.substring(0, 48) + (linked.text.length > 48 ? '…' : '') : `#${id.slice(0, 8)}`}
-                                    </span>
-                                  </div>
-                                )
-                              })}
-                              {block.influencedBy.length > 5 && (
-                                <span className="font-mono text-[8px] text-muted-foreground/50 mt-1">+{block.influencedBy.length - 5} more</span>
-                              )}
-                            </div>
+                    {block.influencedBy && block.influencedBy.length > 0 && (
+                      <div className="group/influences relative">
+                        <div
+                          className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-primary/10 border border-primary/20 cursor-help transition-all hover:bg-primary/20"
+                          onMouseEnter={() => block.influencedBy?.forEach(id => onHighlight?.(id))}
+                          onMouseLeave={() => block.influencedBy?.forEach(() => onHighlight?.(null))}
+                        >
+                          <Sparkles className="h-2.5 w-2.5 text-primary" />
+                          <span className="font-mono text-[9px] font-bold text-primary uppercase tracking-tighter">
+                            {block.influencedBy.length} {block.influencedBy.length === 1 ? 'Link' : 'Links'}
+                          </span>
+                        </div>
+
+                        {/* Hover Tooltip */}
+                        <div className="absolute bottom-full left-0 mb-2 w-56 p-2 rounded-sm bg-black/90 backdrop-blur-md border border-white/10 shadow-xl opacity-0 translate-y-2 pointer-events-none group-hover/influences:opacity-100 group-hover/influences:translate-y-0 transition-all z-[100]">
+                          <h5 className="font-mono text-[8px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 border-b border-white/5 pb-1">Connected nodes</h5>
+                          <div className="flex flex-col gap-1">
+                            {block.influencedBy.slice(0, 5).map((id, i) => {
+                              const linked = allBlocks?.find(b => b.id === id)
+                              return (
+                                <div key={i} className="flex items-start gap-2 overflow-hidden">
+                                  <div className="h-1 w-1 rounded-full bg-primary shrink-0 mt-1" />
+                                  <span className="font-mono text-[9px] text-foreground/70 truncate leading-tight">
+                                    {linked ? linked.text.substring(0, 48) + (linked.text.length > 48 ? '…' : '') : `#${id.slice(0, 8)}`}
+                                  </span>
+                                </div>
+                              )
+                            })}
+                            {block.influencedBy.length > 5 && (
+                              <span className="font-mono text-[8px] text-muted-foreground/50 mt-1">+{block.influencedBy.length - 5} more</span>
+                            )}
                           </div>
                         </div>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
