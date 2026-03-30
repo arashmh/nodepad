@@ -71,18 +71,33 @@ function loadSettings(): AISettings {
   }
 }
 
-/** Read AI settings fresh from localStorage and return fetch headers.
+export interface AIConfig {
+  apiKey: string
+  modelId: string
+  supportsGrounding: boolean
+}
+
+/** Read AI settings fresh from localStorage and return the resolved config.
+ *  Returns null if no API key is configured.
  *  Always call at request time — never store in a closure. */
-export function getAIHeaders(): Record<string, string> {
+export function loadAIConfig(): AIConfig | null {
   const s = loadSettings()
-  if (!s.apiKey) return {}
+  if (!s.apiKey) return null
   const model = AI_MODELS.find(m => m.id === s.modelId) || AI_MODELS.find(m => m.id === DEFAULT_MODEL_ID)!
-  const modelId = s.webGrounding && model.supportsGrounding ? `${model.id}:online` : model.id
+  const modelId = s.modelId || DEFAULT_MODEL_ID
+  return { apiKey: s.apiKey, modelId, supportsGrounding: model.supportsGrounding }
+}
+
+/** @deprecated Use loadAIConfig() for direct browser → OpenRouter calls.
+ *  Kept for any remaining server-route usage during transition. */
+export function getAIHeaders(): Record<string, string> {
+  const config = loadAIConfig()
+  if (!config) return {}
+  const model = AI_MODELS.find(m => m.id === config.modelId) || AI_MODELS.find(m => m.id === DEFAULT_MODEL_ID)!
+  const modelId = config.modelId
   return {
-    "x-or-key": s.apiKey,
+    "x-or-key": config.apiKey,
     "x-or-model": modelId,
-    // Let the API route know if this model is capable of web grounding
-    // so it can auto-enable it for truth-dependent types (claims, entities, etc.)
     "x-or-supports-grounding": model.supportsGrounding ? "true" : "false",
   }
 }

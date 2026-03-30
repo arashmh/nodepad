@@ -13,7 +13,9 @@ import { IntroModal } from "@/components/intro-modal"
 import type { TextBlock } from "@/components/tile-card"
 import type { ContentType } from "@/lib/content-types"
 import { INITIAL_PROJECTS } from "@/lib/initial-data"
-import { useAISettings, getAIHeaders } from "@/lib/ai-settings"
+import { useAISettings } from "@/lib/ai-settings"
+import { enrichBlockClient } from "@/lib/ai-enrich"
+import { generateGhostClient } from "@/lib/ai-ghost"
 import { exportToMarkdown, downloadMarkdown, copyToClipboard } from "@/lib/export"
 import { downloadNodepadFile, parseNodepadFile, NodepadParseError } from "@/lib/nodepad-format"
 import { detectContentType } from "@/lib/detect-content-type"
@@ -343,34 +345,18 @@ export default function Page() {
       // Pass the last 5 generated ghost texts so the model can avoid near-duplicates
       const previousSyntheses = (targetProject.lastGhostTexts || []).slice(-5)
 
-      const res = await fetch("/api/ghost", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAIHeaders()
-        },
-        body: JSON.stringify({ context, previousSyntheses })
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        setProjects(prev => prev.map(p => {
-          if (p.id !== projectId) return p
-          return {
-            ...p,
-            ghostNotes: (p.ghostNotes || []).map(n =>
-              n.id === ghostId ? { ...n, text: data.text, category: data.category, isGenerating: false } : n
-            ),
-            // Accumulate ghost texts for dedup (keep last 10)
-            lastGhostTexts: [...(p.lastGhostTexts || []), data.text].slice(-10),
-          }
-        }))
-      } else {
-        setProjects(prev => prev.map(p => p.id === projectId
-          ? { ...p, ghostNotes: (p.ghostNotes || []).filter(n => n.id !== ghostId) }
-          : p
-        ))
-      }
+      const data = await generateGhostClient(context, previousSyntheses)
+      setProjects(prev => prev.map(p => {
+        if (p.id !== projectId) return p
+        return {
+          ...p,
+          ghostNotes: (p.ghostNotes || []).map(n =>
+            n.id === ghostId ? { ...n, text: data.text, category: data.category, isGenerating: false } : n
+          ),
+          // Accumulate ghost texts for dedup (keep last 10)
+          lastGhostTexts: [...(p.lastGhostTexts || []), data.text].slice(-10),
+        }
+      }))
     } catch (e) {
       console.error("Ghost note generation failed", e)
       setProjects(prev => prev.map(p => p.id === projectId
@@ -399,34 +385,20 @@ export default function Page() {
 
       const performEnrich = async () => {
         try {
-          const res = await fetch("/api/enrich", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...getAIHeaders()
-            },
-            body: JSON.stringify({ 
-              text, 
-              category, 
-              context: context.map(({ id, ...rest }) => rest), 
-              forcedType 
-            }),
-          })
-          
-          if (res.ok) {
-            const data = await res.json()
-            // Map indices back to stable block IDs — the context array carries
-            // the original block IDs so we get exact, rename-proof references.
-            const influencedBy = data.influencedByIndices
+          const data = await enrichBlockClient(
+            text,
+            context.map(({ id, ...rest }) => ({ id, ...rest })),
+            forcedType,
+            category,
+          )
+
+          // Map indices back to stable block IDs — the context array carries
+          // the original block IDs so we get exact, rename-proof references.
+          const influencedBy = data.influencedByIndices
               ? (data.influencedByIndices as number[])
                   .map((idx) => context[idx]?.id)
                   .filter(Boolean) as string[]
               : []
-
-            // Clamp confidence to 0–100 regardless of what the model returns
-            if (data.confidence != null) {
-              data.confidence = Math.min(100, Math.max(0, Math.round(data.confidence)))
-            }
 
             setProjects((current: Project[]) => {
               const mergeTargetIdx = data.mergeWithIndex
@@ -447,7 +419,6 @@ export default function Page() {
                         category: data.category,
                         annotation: data.annotation,
                         confidence: data.confidence,
-                        sources: data.sources,
                         influencedBy,
                         isUnrelated: data.isUnrelated,
                         isEnriching: false,
@@ -507,7 +478,6 @@ export default function Page() {
                     category: data.category,
                     annotation: data.annotation,
                     confidence: data.confidence,
-                    sources: data.sources,
                     influencedBy,
                     isUnrelated: data.isUnrelated,
                     isEnriching: false,
@@ -519,18 +489,12 @@ export default function Page() {
             })
 
             setTimeout(() => generateGhostNote(projectId), 2500)
-          } else {
-            const isNoKey = res.status === 401
-            setProjects((current: Project[]) => current.map(proj => proj.id === projectId ? {
-              ...proj,
-              blocks: proj.blocks.map(b => b.id === id ? { ...b, isEnriching: false, isError: true, statusText: isNoKey ? "no-api-key" : undefined } : b)
-            } : proj))
-          }
-        } catch (e) {
+        } catch (e: any) {
           console.error(e)
+          const isNoKey = e?.message?.includes("No API key") || false
           setProjects((current: Project[]) => current.map(proj => proj.id === projectId ? {
             ...proj,
-            blocks: proj.blocks.map(b => b.id === id ? { ...b, isEnriching: false, isError: true } : b)
+            blocks: proj.blocks.map(b => b.id === id ? { ...b, isEnriching: false, isError: true, statusText: isNoKey ? "no-api-key" : undefined } : b)
           } : proj))
         }
       }
