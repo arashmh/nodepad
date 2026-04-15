@@ -395,7 +395,7 @@ export const TileCard = memo(function TileCard({
                 e.stopPropagation()
                 onTogglePin(block.id)
               }}
-              className={`flex h-4 w-4 items-center justify-center rounded-sm transition-all shadow-sm ${block.isPinned ? "bg-black/20 opacity-100 scale-110 !opacity-100" : "opacity-40 hover:opacity-100 hover:bg-black/10"}`}
+              className={`flex h-4 w-4 items-center justify-center rounded-sm transition-all shadow-sm ${block.isPinned ? "bg-black/20 opacity-100 scale-110 !opacity-100" : "opacity-60 hover:opacity-100 hover:bg-black/10"}`}
               aria-label={block.isPinned ? "Unpin note" : "Pin note"}
               title={block.isPinned ? "Unpin note" : "Pin note"}
             >
@@ -413,7 +413,7 @@ export const TileCard = memo(function TileCard({
                 }
                 setIsTypePickerOpen(v => !v)
               }}
-              className={`flex h-4 w-4 items-center justify-center rounded-sm transition-all ${isTypePickerOpen ? "bg-black/20 opacity-100" : "opacity-40 hover:opacity-100 hover:bg-black/10"}`}
+              className={`flex h-4 w-4 items-center justify-center rounded-sm transition-all ${isTypePickerOpen ? "bg-black/20 opacity-100" : "opacity-60 hover:opacity-100 hover:bg-black/10"}`}
               title="Change type"
             >
               <Tag className="h-2.5 w-2.5" />
@@ -725,13 +725,13 @@ export const TileCard = memo(function TileCard({
                   {block.influencedBy && block.influencedBy.length > 1 && (
                     <button
                       onClick={() => setIsFooterExpanded(!isFooterExpanded)}
-                      className={`rounded-sm p-1 transition-all ${isFooterExpanded ? 'bg-primary/20 text-primary' : 'text-muted-foreground/40 hover:text-muted-foreground/60'}`}
+                      className={`rounded-sm p-1 transition-all ${isFooterExpanded ? 'bg-primary/20 text-primary' : 'text-muted-foreground/60 hover:text-muted-foreground/80'}`}
                     >
                       {isFooterExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3 rotate-[-90deg]" />}
                     </button>
                   )}
                   
-                  <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-secondary/30 border border-border/20 transition-opacity duration-300 ${isHovered ? "opacity-100" : "opacity-20"}`}>
+                  <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-secondary/30 border border-border/20 transition-opacity duration-300 ${isHovered ? "opacity-100" : "opacity-40"}`}>
                     <span className="font-mono text-[8px] text-muted-foreground/50 uppercase tracking-[0.1em]">Node ID:</span>
                     <span className="font-mono text-[10px] text-muted-foreground/80 font-bold">#{block.id.slice(0, 6)}</span>
                   </div>

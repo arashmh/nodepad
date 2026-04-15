@@ -46,7 +46,7 @@ export function GhostPanel({ ghostNotes, isOpen, onClose, onClaim, onDismiss }: 
           </div>
           <button
             onClick={onClose}
-            className="p-1 px-1.5 hover:bg-white/5 rounded-sm transition-colors text-muted-foreground/30 hover:text-white"
+            className="p-1 px-1.5 hover:bg-white/5 rounded-sm transition-colors text-muted-foreground/55 hover:text-white"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -55,7 +55,7 @@ export function GhostPanel({ ghostNotes, isOpen, onClose, onClaim, onDismiss }: 
         {/* Note list */}
         <div className="flex-1 overflow-y-auto custom-scrollbar py-3 px-3 space-y-3">
           {ghostNotes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-32 gap-3 opacity-25">
+            <div className="flex flex-col items-center justify-center h-32 gap-3 opacity-40">
               <Sparkles className="h-5 w-5" />
               <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-center leading-relaxed">
                 Emergent theses<br />will appear here
@@ -85,7 +85,7 @@ export function GhostPanel({ ghostNotes, isOpen, onClose, onClaim, onDismiss }: 
                     {!note.isGenerating && (
                       <button
                         onClick={() => onDismiss(note.id)}
-                        className="h-5 w-5 flex items-center justify-center rounded-sm text-muted-foreground/25 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        className="h-5 w-5 flex items-center justify-center rounded-sm text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -100,7 +100,7 @@ export function GhostPanel({ ghostNotes, isOpen, onClose, onClaim, onDismiss }: 
                         <div className="h-1 w-1 animate-bounce rounded-full bg-primary/40 [animation-delay:-0.15s]" />
                         <div className="h-1 w-1 animate-bounce rounded-full bg-primary/40" />
                       </div>
-                      <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-muted-foreground/40">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-muted-foreground/60">
                         Synthesizing...
                       </p>
                     </div>
@@ -128,7 +128,7 @@ export function GhostPanel({ ghostNotes, isOpen, onClose, onClaim, onDismiss }: 
 
         {/* Footer */}
         <div className="border-t border-border/30 px-3 py-2 shrink-0">
-          <p className="font-mono text-[8px] text-muted-foreground/20 uppercase tracking-[0.15em] text-center">
+          <p className="font-mono text-[8px] text-muted-foreground/50 uppercase tracking-[0.15em] text-center">
             Generated from your writing patterns
           </p>
         </div>

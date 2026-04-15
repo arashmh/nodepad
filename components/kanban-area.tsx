@@ -133,7 +133,7 @@ export function KanbanArea({
                     {col.title}
                   </h3>
                 </div>
-                <span className="font-mono text-[9px] text-muted-foreground/40 font-bold">
+                <span className="font-mono text-[9px] text-muted-foreground/60 font-bold">
                   {col.blocks.length}
                 </span>
               </div>

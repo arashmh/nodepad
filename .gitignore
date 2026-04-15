@@ -19,3 +19,7 @@ CLAUDE.md
 ARCHITECTURE.md
 DEMO_TRANSCRIPT.md
 DESIGN_CASE_STUDY.md
+
+# .env file should be ignored as it contains sensitive information
+.env
+.temp

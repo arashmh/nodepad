@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copy Markdown — nodepad Guide</title>
+<style>
+  :root { --bg: #0a0a0f; --surface: #12121a; --border: #1e1e2e; --text: #c8c8d4; --muted: #6e6e82; --accent: #4ade80; --accent-dim: #22543d; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace; background: var(--bg); color: var(--text); line-height: 1.7; padding: 3rem 2rem; max-width: 780px; margin: 0 auto; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 { font-size: 1.6rem; color: #fff; margin-bottom: 0.3rem; letter-spacing: 0.04em; }
+  .badge { display: inline-block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.15rem 0.6rem; border-radius: 3px; background: #2a1a1a; color: #f87171; margin-bottom: 1.5rem; }
+  h2 { font-size: 1rem; color: #fff; margin-top: 2.5rem; margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); letter-spacing: 0.03em; }
+  p { margin-bottom: 1rem; font-size: 0.88rem; }
+  ul { margin-bottom: 1rem; padding-left: 1.5rem; font-size: 0.88rem; }
+  li { margin-bottom: 0.4rem; }
+  code { background: var(--surface); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.82rem; color: var(--accent); }
+  .callout { background: var(--surface); border-left: 3px solid #f87171; padding: 1rem 1.2rem; border-radius: 0 6px 6px 0; margin-bottom: 1.5rem; font-size: 0.85rem; }
+  .back { display: inline-block; margin-top: 2.5rem; font-size: 0.8rem; opacity: 0.6; }
+  .back:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>Copy Markdown</h1>
+<span class="badge">Action</span>
+
+<p>
+  Copies the full markdown export of the current project to your <strong>system clipboard</strong> — ready to paste into any markdown editor, document, or chat.
+</p>
+
+<h2>How to Trigger</h2>
+<ul>
+  <li>Press <code>Ctrl+K</code> → select <strong>Copy markdown</strong></li>
+</ul>
+
+<h2>What You Get</h2>
+<div class="callout">
+  Functionally identical to <a href="export-markdown.html">Export Markdown</a> — the same rich document with YAML front matter, table of contents, per-type sections, confidence bars, and full annotations. The only difference is the delivery method: clipboard instead of file download.
+</div>
+
+<h2>Content Includes</h2>
+<ul>
+  <li>YAML front matter (title, date, node count, types)</li>
+  <li>Overview table with type emoji and counts</li>
+  <li>Pinned nodes callout</li>
+  <li>Table of contents</li>
+  <li>All note sections with type-specific formatting</li>
+  <li>Footer with attribution</li>
+</ul>
+
+<h2>Use Cases</h2>
+<ul>
+  <li><strong>Paste into an LLM chat</strong> — the structured format gives AI models excellent context about your research</li>
+  <li><strong>Paste into Obsidian / Notion</strong> — renders cleanly in most markdown editors</li>
+  <li><strong>Share in a message</strong> — quick way to share your research canvas without sending a file</li>
+</ul>
+
+<a class="back" href="guide-index.html">← Back to Guide Index</a>
+
+</body>
+</html>

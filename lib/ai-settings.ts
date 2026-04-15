@@ -60,14 +60,14 @@ const STORAGE_KEY = "nodepad-ai-settings"
 
 function loadSettings(): AISettings {
   if (typeof window === "undefined") {
-    return { apiKey: "", modelId: DEFAULT_MODEL_ID, webGrounding: false }
+    return { apiKey: "", modelId: DEFAULT_MODEL_ID, webGrounding: true }
   }
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { apiKey: "", modelId: DEFAULT_MODEL_ID, webGrounding: false }
-    return { apiKey: "", modelId: DEFAULT_MODEL_ID, webGrounding: false, ...JSON.parse(raw) }
+    if (!raw) return { apiKey: "", modelId: DEFAULT_MODEL_ID, webGrounding: true }
+    return { apiKey: "", modelId: DEFAULT_MODEL_ID, webGrounding: true, ...JSON.parse(raw) }
   } catch {
-    return { apiKey: "", modelId: DEFAULT_MODEL_ID, webGrounding: false }
+    return { apiKey: "", modelId: DEFAULT_MODEL_ID, webGrounding: true }
   }
 }
 

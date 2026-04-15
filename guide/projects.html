@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projects — nodepad Guide</title>
+<style>
+  :root { --bg: #0a0a0f; --surface: #12121a; --border: #1e1e2e; --text: #c8c8d4; --muted: #6e6e82; --accent: #4ade80; --accent-dim: #22543d; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace; background: var(--bg); color: var(--text); line-height: 1.7; padding: 3rem 2rem; max-width: 780px; margin: 0 auto; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 { font-size: 1.6rem; color: #fff; margin-bottom: 0.3rem; letter-spacing: 0.04em; }
+  .badge { display: inline-block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.15rem 0.6rem; border-radius: 3px; background: #1a1a3a; color: #818cf8; margin-bottom: 1.5rem; }
+  h2 { font-size: 1rem; color: #fff; margin-top: 2.5rem; margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); letter-spacing: 0.03em; }
+  p { margin-bottom: 1rem; font-size: 0.88rem; }
+  ul { margin-bottom: 1rem; padding-left: 1.5rem; font-size: 0.88rem; }
+  li { margin-bottom: 0.4rem; }
+  code { background: var(--surface); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.82rem; color: var(--accent); }
+  .callout { background: var(--surface); border-left: 3px solid #818cf8; padding: 1rem 1.2rem; border-radius: 0 6px 6px 0; margin-bottom: 1.5rem; font-size: 0.85rem; }
+  .back { display: inline-block; margin-top: 2.5rem; font-size: 0.8rem; opacity: 0.6; }
+  .back:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>Projects</h1>
+<span class="badge">Navigate</span>
+
+<p>
+  The Projects command opens the <strong>Project Sidebar</strong> on the left side of the screen. Internally, projects are called <strong>"Spaces"</strong> — this is the label shown in the sidebar header.
+</p>
+
+<h2>How to Open</h2>
+<ul>
+  <li>Press <code>Ctrl+K</code> → select <strong>Projects</strong></li>
+  <li>Click the <strong>menu icon</strong> (hamburger) in the top-left status bar</li>
+</ul>
+
+<h2>What You See</h2>
+<p>Each project entry shows:</p>
+<ul>
+  <li>The <strong>project name</strong> in monospace bold (highlighted in accent colour if active)</li>
+  <li>A <strong>node count</strong> below the name (e.g. "12 nodes")</li>
+</ul>
+
+<h2>Switching Projects</h2>
+<p>
+  Click any project in the list to make it active. The canvas immediately updates to show that project's notes, ghost notes, and collapsed state. Any pending AI enrichment from the previous project is safely cleared.
+</p>
+
+<h2>Renaming</h2>
+<p>
+  Hover over a project and click the <strong>pencil icon</strong>. The name becomes an inline text input. Press <strong>Enter</strong> or click away to confirm, <strong>Escape</strong> to cancel.
+</p>
+
+<h2>Deleting</h2>
+<div class="callout">
+  Hover and click the <strong>trash icon</strong> (only available if more than one project exists). A red confirmation overlay appears inline: <strong>"Delete Space?"</strong> with confirm/cancel buttons. If you delete the active project, the app switches to the first remaining project.
+</div>
+
+<h2>Sidebar Footer</h2>
+<p>At the bottom of the sidebar you'll find:</p>
+<ul>
+  <li><strong>New Space</strong> — create a new project</li>
+  <li><strong>Import .nodepad</strong> — open a file picker to import a saved project</li>
+  <li><strong>Settings</strong> — slide to the AI settings panel (API key, model, web grounding)</li>
+</ul>
+
+<h2>Data Persistence</h2>
+<p>
+  All projects are saved to <code>localStorage</code> under <code>nodepad-projects</code>, with a rolling backup under <code>nodepad-backup</code>. On load, the app tries the primary key first, falls back to the backup, then attempts migration from a legacy single-project format, and finally falls back to the default starter project.
+</p>
+
+<a class="back" href="guide-index.html">← Back to Guide Index</a>
+
+</body>
+</html>

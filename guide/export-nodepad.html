@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Export .nodepad — nodepad Guide</title>
+<style>
+  :root { --bg: #0a0a0f; --surface: #12121a; --border: #1e1e2e; --text: #c8c8d4; --muted: #6e6e82; --accent: #4ade80; --accent-dim: #22543d; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace; background: var(--bg); color: var(--text); line-height: 1.7; padding: 3rem 2rem; max-width: 780px; margin: 0 auto; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 { font-size: 1.6rem; color: #fff; margin-bottom: 0.3rem; letter-spacing: 0.04em; }
+  .badge { display: inline-block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.15rem 0.6rem; border-radius: 3px; background: #2a1a1a; color: #f87171; margin-bottom: 1.5rem; }
+  h2 { font-size: 1rem; color: #fff; margin-top: 2.5rem; margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); letter-spacing: 0.03em; }
+  p { margin-bottom: 1rem; font-size: 0.88rem; }
+  ul { margin-bottom: 1rem; padding-left: 1.5rem; font-size: 0.88rem; }
+  li { margin-bottom: 0.4rem; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.82rem; }
+  th { text-align: left; padding: 0.5rem 0.8rem; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.7rem; }
+  td { padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--border); }
+  code { background: var(--surface); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.82rem; color: var(--accent); }
+  .callout { background: var(--surface); border-left: 3px solid #f87171; padding: 1rem 1.2rem; border-radius: 0 6px 6px 0; margin-bottom: 1.5rem; font-size: 0.85rem; }
+  .back { display: inline-block; margin-top: 2.5rem; font-size: 0.8rem; opacity: 0.6; }
+  .back:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>Export .nodepad</h1>
+<span class="badge">Action</span>
+
+<p>
+  Exports the current project as a <code>.nodepad</code> file — a versioned JSON snapshot that captures <strong>everything</strong>: notes, annotations, connections, ghost notes, and all AI enrichment data.
+</p>
+
+<h2>How to Trigger</h2>
+<ul>
+  <li>Press <code>Ctrl+K</code> → select <strong>Export .nodepad</strong></li>
+</ul>
+<p>The browser downloads the file immediately.</p>
+
+<h2>File Format</h2>
+<p>
+  A <code>.nodepad</code> file is <strong>pretty-printed JSON</strong> (2-space indent) with the <code>.nodepad</code> extension. It's standard JSON, just with a custom extension.
+</p>
+
+<h2>What's Included</h2>
+<table>
+  <tr><th>Field</th><th>Description</th></tr>
+  <tr><td><code>version</code></td><td>Schema version (currently <code>1</code>) for future migrations</td></tr>
+  <tr><td><code>exportedAt</code></td><td>Unix timestamp of the export</td></tr>
+  <tr><td><code>project.id</code></td><td>The project's unique ID</td></tr>
+  <tr><td><code>project.name</code></td><td>Project name (used for the filename)</td></tr>
+  <tr><td><code>project.blocks[]</code></td><td>Every note: text, type, category, annotation, confidence, sources, connections, pin state, sub-tasks</td></tr>
+  <tr><td><code>project.collapsedIds</code></td><td>Which notes are collapsed in the UI</td></tr>
+  <tr><td><code>project.ghostNotes</code></td><td>AI ghost notes (id, text, category)</td></tr>
+  <tr><td><code>project.lastGhostTexts</code></td><td>Recent ghost texts (for de-duplication on re-import)</td></tr>
+</table>
+
+<h2>What's Stripped</h2>
+<div class="callout">
+  Transient UI state (<code>isEnriching</code>, <code>isError</code>, <code>statusText</code>) is omitted — only persistent data is saved. Ghost notes always have <code>isGenerating: false</code>.
+</div>
+
+<h2>Filename</h2>
+<p>
+  The project name is slugified (lowercased, spaces→hyphens, non-alphanumeric stripped, max 60 chars), e.g. <code>my-research.nodepad</code>. Falls back to <code>project.nodepad</code>.
+</p>
+
+<a class="back" href="guide-index.html">← Back to Guide Index</a>
+
+</body>
+</html>

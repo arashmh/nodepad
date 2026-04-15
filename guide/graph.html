@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graph View — nodepad Guide</title>
+<style>
+  :root { --bg: #0a0a0f; --surface: #12121a; --border: #1e1e2e; --text: #c8c8d4; --muted: #6e6e82; --accent: #4ade80; --accent-dim: #22543d; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace; background: var(--bg); color: var(--text); line-height: 1.7; padding: 3rem 2rem; max-width: 780px; margin: 0 auto; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 { font-size: 1.6rem; color: #fff; margin-bottom: 0.3rem; letter-spacing: 0.04em; }
+  .badge { display: inline-block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.15rem 0.6rem; border-radius: 3px; background: var(--accent-dim); color: var(--accent); margin-bottom: 1.5rem; }
+  h2 { font-size: 1rem; color: #fff; margin-top: 2.5rem; margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); letter-spacing: 0.03em; }
+  p { margin-bottom: 1rem; font-size: 0.88rem; }
+  ul { margin-bottom: 1rem; padding-left: 1.5rem; font-size: 0.88rem; }
+  li { margin-bottom: 0.4rem; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.82rem; }
+  th { text-align: left; padding: 0.5rem 0.8rem; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.7rem; }
+  td { padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--border); }
+  code { background: var(--surface); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.82rem; color: var(--accent); }
+  .callout { background: var(--surface); border-left: 3px solid var(--accent); padding: 1rem 1.2rem; border-radius: 0 6px 6px 0; margin-bottom: 1.5rem; font-size: 0.85rem; }
+  .back { display: inline-block; margin-top: 2.5rem; font-size: 0.8rem; opacity: 0.6; }
+  .back:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>Graph View</h1>
+<span class="badge">View</span>
+
+<p>
+  The Graph view renders your notes as a <strong>force-directed network diagram</strong> powered by D3.js. Notes become nodes, and AI-discovered connections become curved arcs between them. The most connected notes gravitate toward the centre; isolated notes drift to the edges.
+</p>
+
+<h2>How Nodes Are Positioned</h2>
+<p>
+  A physics simulation places nodes using several forces working together:
+</p>
+<ul>
+  <li><strong>Radial centrality</strong> — nodes with more connections are pulled toward the centre; isolated nodes are pushed to the outer ring.</li>
+  <li><strong>Link attraction</strong> — connected nodes attract each other (~120px apart).</li>
+  <li><strong>Charge repulsion</strong> — all nodes repel each other to prevent overlap.</li>
+  <li><strong>Collision</strong> — nodes can't physically overlap (padding enforced).</li>
+  <li><strong>Gravity</strong> — a weak centering force keeps the graph from drifting off-screen.</li>
+</ul>
+
+<h2>Node Size &amp; Appearance</h2>
+<table>
+  <tr><th>Visual</th><th>Meaning</th></tr>
+  <tr><td>Node size (22–34px)</td><td>Number of connections (bigger = more connected)</td></tr>
+  <tr><td>Node colour</td><td>Content type (claim, entity, question, etc.)</td></tr>
+  <tr><td>Small dot on top-right</td><td>Note is pinned</td></tr>
+  <tr><td>Outer glow</td><td>Hub node (3+ connections)</td></tr>
+  <tr><td>Spinning dashed ring</td><td>AI enrichment in progress</td></tr>
+  <tr><td>✦ gradient node</td><td>Synthesis / AI ghost note</td></tr>
+</table>
+
+<h2>Connection Lines</h2>
+<ul>
+  <li><strong>Curved arcs</strong> — regular <code>influencedBy</code> relationships. The curve bows outward from the centre so overlapping links are distinguishable.</li>
+  <li><strong>Dashed faint lines</strong> — synthesis links connecting the AI ghost node to every note (very subtle at 5% opacity).</li>
+</ul>
+
+<h2>Hover Behaviour</h2>
+<div class="callout">
+  <strong>Hover a node</strong> → the node and its direct neighbours stay opaque; everything else fades to ~8% opacity (spotlight effect).<br><br>
+  A <strong>floating tooltip</strong> appears near your cursor showing the content type, category, link count, and full note text.
+</div>
+
+<h2>Click &amp; Detail Panel</h2>
+<p>
+  <strong>Click a node</strong> to select it. The graph shrinks to 70% width and a <strong>detail panel</strong> slides in from the right (30% width). The panel shows:
+</p>
+<ul>
+  <li>Colour-coded header with type icon, type label, category, and date</li>
+  <li>Action buttons: reclassify type, pin, re-enrich, close</li>
+  <li>Full note text (double-click to edit inline)</li>
+  <li>Confidence bar showing AI classification confidence</li>
+  <li>AI annotation (rendered as Markdown, double-click to edit)</li>
+  <li>Sources / URLs if web grounding is active</li>
+  <li>Connected nodes list — click any to navigate to that node</li>
+</ul>
+
+<h2>Drag, Zoom &amp; Pan</h2>
+<table>
+  <tr><th>Action</th><th>Effect</th></tr>
+  <tr><td>Scroll wheel</td><td>Zoom in/out (0.2× to 5×)</td></tr>
+  <tr><td>Drag empty space</td><td>Pan the entire graph</td></tr>
+  <tr><td>Drag a node</td><td>Reposition that node (others react via simulation)</td></tr>
+</table>
+
+<h2>Centrality Legend</h2>
+<p>
+  A small legend in the bottom-right reads: <em>"centre = most connected / edge = isolated"</em> — a reminder that node position encodes how well-connected each note is.
+</p>
+
+<a class="back" href="guide-index.html">← Back to Guide Index</a>
+
+</body>
+</html>

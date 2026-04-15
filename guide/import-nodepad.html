@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Import .nodepad — nodepad Guide</title>
+<style>
+  :root { --bg: #0a0a0f; --surface: #12121a; --border: #1e1e2e; --text: #c8c8d4; --muted: #6e6e82; --accent: #4ade80; --accent-dim: #22543d; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace; background: var(--bg); color: var(--text); line-height: 1.7; padding: 3rem 2rem; max-width: 780px; margin: 0 auto; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 { font-size: 1.6rem; color: #fff; margin-bottom: 0.3rem; letter-spacing: 0.04em; }
+  .badge { display: inline-block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.15rem 0.6rem; border-radius: 3px; background: #2a1a1a; color: #f87171; margin-bottom: 1.5rem; }
+  h2 { font-size: 1rem; color: #fff; margin-top: 2.5rem; margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); letter-spacing: 0.03em; }
+  p { margin-bottom: 1rem; font-size: 0.88rem; }
+  ul { margin-bottom: 1rem; padding-left: 1.5rem; font-size: 0.88rem; }
+  li { margin-bottom: 0.4rem; }
+  code { background: var(--surface); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.82rem; color: var(--accent); }
+  .callout { background: var(--surface); border-left: 3px solid #f87171; padding: 1rem 1.2rem; border-radius: 0 6px 6px 0; margin-bottom: 1.5rem; font-size: 0.85rem; }
+  .back { display: inline-block; margin-top: 2.5rem; font-size: 0.8rem; opacity: 0.6; }
+  .back:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>Import .nodepad</h1>
+<span class="badge">Action</span>
+
+<p>
+  Imports a previously exported <code>.nodepad</code> file as a <strong>new project</strong>. It never overwrites existing projects.
+</p>
+
+<h2>How to Trigger</h2>
+<ul>
+  <li>Press <code>Ctrl+K</code> → select <strong>Import .nodepad</strong></li>
+  <li>Open the sidebar → click <strong>Import .nodepad</strong> in the footer</li>
+</ul>
+<p>A file picker opens, accepting <code>.nodepad</code> and <code>.json</code> files.</p>
+
+<h2>What Happens on Import</h2>
+<ol>
+  <li>The file is read and parsed as JSON.</li>
+  <li><strong>Three validation checks</strong> run:
+    <ul>
+      <li>Content must be valid JSON</li>
+      <li>Root must be a non-null object</li>
+      <li>Must contain <code>project.blocks</code> as an array</li>
+    </ul>
+  </li>
+  <li>If any check fails, an error message is shown via alert.</li>
+</ol>
+
+<h2>Always Creates a New Project</h2>
+<div class="callout">
+  A <strong>fresh ID</strong> is generated so there are no collisions with existing projects. If the imported project name already exists, it gets a copy suffix: "My Research (2)", "My Research (3)", etc.
+</div>
+
+<p>The new project is appended to the project list and <strong>immediately becomes active</strong>.</p>
+
+<h2>Post-Import Cleanup</h2>
+<p>
+  Transient UI flags on every note are reset — <code>isEnriching: false</code>, <code>isError: false</code>, <code>statusText: undefined</code> — so no stale enrichment state carries over from the export.
+</p>
+<p>The file input is also reset after import, so the same file can be re-imported again if desired.</p>
+
+<a class="back" href="guide-index.html">← Back to Guide Index</a>
+
+</body>
+</html>

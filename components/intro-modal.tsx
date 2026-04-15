@@ -63,7 +63,7 @@ export function IntroModal({ open, onClose }: IntroModalProps) {
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-sm text-muted-foreground/40 hover:text-foreground hover:bg-white/10 transition-colors"
+                className="p-1.5 rounded-sm text-muted-foreground/60 hover:text-foreground hover:bg-white/10 transition-colors"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -83,7 +83,7 @@ export function IntroModal({ open, onClose }: IntroModalProps) {
 
             {/* Footer */}
             <div className="flex items-center justify-between px-6 py-4 border-t border-white/[0.06]">
-              <p className="text-xs text-muted-foreground/40">
+              <p className="text-xs text-muted-foreground/60">
                 You can replay this anytime via the <span className="font-mono font-black text-muted-foreground/60">?</span> button
               </p>
               <button

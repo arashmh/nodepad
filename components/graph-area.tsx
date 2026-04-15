@@ -26,6 +26,7 @@ interface GraphAreaProps {
   blocks: TextBlock[]
   ghostNote?: { id: string; text: string; category: string; isGenerating: boolean }
   projectName: string
+  onDelete:         (id: string) => void
   onReEnrich:       (id: string) => void
   onChangeType:     (id: string, newType: import("@/lib/content-types").ContentType) => void
   onTogglePin:      (id: string) => void
@@ -176,6 +177,7 @@ export function GraphArea({
   blocks,
   ghostNote,
   projectName,
+  onDelete,
   onReEnrich,
   onChangeType,
   onTogglePin,
@@ -196,6 +198,13 @@ export function GraphArea({
   const [dims, setDims]   = React.useState({ w: 900, h: 600 })
   const [selectedId, setSelectedId] = React.useState<string | null>(null)
   const [hoveredId,  setHoveredId]  = React.useState<string | null>(null)
+
+  // Clear selectedId if the selected block was deleted
+  React.useEffect(() => {
+    if (selectedId && !blocks.some(b => b.id === selectedId)) {
+      setSelectedId(null)
+    }
+  }, [blocks, selectedId])
   const [tooltip,    setTooltip]    = React.useState<{ id: string; x: number; y: number } | null>(null)
   const [transform,  setTransform]  = React.useState({ x: 0, y: 0, k: 1 })
 
@@ -738,8 +747,8 @@ export function GraphArea({
         {/* ── Legend: centrality explanation ───────────────────────────── */}
         {blocks.length > 2 && (
           <div className="absolute bottom-4 right-4 pointer-events-none flex flex-col items-end gap-1">
-            <span className="font-mono text-[7.5px] text-muted-foreground/20 uppercase tracking-widest">centre = most connected</span>
-            <span className="font-mono text-[7.5px] text-muted-foreground/20 uppercase tracking-widest">edge = isolated</span>
+            <span className="font-mono text-[7.5px] text-muted-foreground/50 uppercase tracking-widest">centre = most connected</span>
+            <span className="font-mono text-[7.5px] text-muted-foreground/50 uppercase tracking-widest">edge = isolated</span>
           </div>
         )}
 
@@ -752,7 +761,7 @@ export function GraphArea({
 
         {blocks.length > 0 && (
           <div className="absolute top-4 left-4 pointer-events-none">
-            <span className="font-mono text-[8px] text-muted-foreground/22 uppercase tracking-widest">
+            <span className="font-mono text-[8px] text-muted-foreground/50 uppercase tracking-widest">
               {blocks.length} node{blocks.length !== 1 ? "s" : ""}
               {ghostNote ? " · synthesis active" : ""}
             </span>
@@ -769,6 +778,7 @@ export function GraphArea({
             allBlocks={blocks}
             onClose={() => setSelectedId(null)}
             onSelectNode={id => setSelectedId(id)}
+            onDelete={(id) => { onDelete(id); setSelectedId(null) }}
             onReEnrich={onReEnrich}
             onChangeType={onChangeType}
             onTogglePin={onTogglePin}

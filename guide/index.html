@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Index — nodepad Guide</title>
+<style>
+  :root { --bg: #0a0a0f; --surface: #12121a; --border: #1e1e2e; --text: #c8c8d4; --muted: #6e6e82; --accent: #4ade80; --accent-dim: #22543d; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace; background: var(--bg); color: var(--text); line-height: 1.7; padding: 3rem 2rem; max-width: 780px; margin: 0 auto; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 { font-size: 1.6rem; color: #fff; margin-bottom: 0.3rem; letter-spacing: 0.04em; }
+  .badge { display: inline-block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.15rem 0.6rem; border-radius: 3px; background: #1a1a3a; color: #818cf8; margin-bottom: 1.5rem; }
+  h2 { font-size: 1rem; color: #fff; margin-top: 2.5rem; margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); letter-spacing: 0.03em; }
+  p { margin-bottom: 1rem; font-size: 0.88rem; }
+  ul { margin-bottom: 1rem; padding-left: 1.5rem; font-size: 0.88rem; }
+  li { margin-bottom: 0.4rem; }
+  code { background: var(--surface); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.82rem; color: var(--accent); }
+  .callout { background: var(--surface); border-left: 3px solid #818cf8; padding: 1rem 1.2rem; border-radius: 0 6px 6px 0; margin-bottom: 1.5rem; font-size: 0.85rem; }
+  .back { display: inline-block; margin-top: 2.5rem; font-size: 0.8rem; opacity: 0.6; }
+  .back:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>Index</h1>
+<span class="badge">Navigate</span>
+
+<p>
+  The Index is a navigational sidebar panel (240px wide) that provides a <strong>structured overview</strong> of all notes in the current project. It appears on the right side of the screen.
+</p>
+
+<h2>How to Open</h2>
+<ul>
+  <li>Press <code>Ctrl+K</code> → select <strong>Index</strong></li>
+  <li>Click the <strong>Index toggle</strong> button in the status bar</li>
+  <li>Close with the <strong>X</strong> button in the panel header, or by opening a different panel</li>
+</ul>
+
+<h2>Tiling / Graph View — Category Groups</h2>
+<p>
+  In Tiling or Graph view, the Index header reads <strong>"Canvas Index"</strong>. Notes are grouped by <strong>category</strong> (e.g. "Philosophy", "Technology", "Tasks"). Within each category, every note is listed as a clickable row showing:
+</p>
+<ul>
+  <li>A <strong>type icon</strong> — checkmark for tasks, sparkle for theses, question mark for questions, etc.</li>
+  <li>A <strong>preview</strong> of the first 35 characters of the note text</li>
+</ul>
+
+<h2>Kanban View — Column Directory</h2>
+<p>
+  In Kanban view, the header reads <strong>"Board Index"</strong>. Instead of listing individual notes, it shows a <strong>column directory</strong> — each kanban column (by content type) — so you can jump directly to a specific board column.
+</p>
+
+<h2>Navigation</h2>
+<div class="callout">
+  <strong>Hover</strong> over a note entry → the corresponding tile on the canvas is highlighted.<br>
+  <strong>Click</strong> a note entry → <strong>smooth-scroll</strong> to that tile and briefly highlight it (fades after 1.5 seconds).<br>
+  In Kanban mode, clicking a column name smooth-scrolls horizontally to that column.
+</div>
+
+<p>
+  This makes the Index the primary tool for quickly locating and jumping to a specific note when your canvas grows large.
+</p>
+
+<a class="back" href="guide-index.html">← Back to Guide Index</a>
+
+</body>
+</html>

@@ -20,7 +20,7 @@ export function TileIndex({ blocks, onHighlight, highlightedId, onClose, isOpen,
       case "task": return <CheckSquare className="h-3 w-3 text-indigo-400" />
       case "thesis": return <Sparkles className="h-3 w-3 text-yellow-400" />
       case "question": return <HelpCircle className="h-3 w-3 text-blue-400" />
-      default: return <FileText className="h-3 w-3 text-muted-foreground/40" />
+      default: return <FileText className="h-3 w-3 text-muted-foreground/60" />
     }
   }
 
@@ -80,7 +80,7 @@ export function TileIndex({ blocks, onHighlight, highlightedId, onClose, isOpen,
           {onClose && (
             <button 
               onClick={onClose}
-              className="p-1 px-1.5 hover:bg-white/5 rounded-sm transition-colors text-muted-foreground/30 hover:text-white"
+              className="p-1 px-1.5 hover:bg-white/5 rounded-sm transition-colors text-muted-foreground/55 hover:text-white"
               title="Close Index"
             >
               <X className="h-3.5 w-3.5" />

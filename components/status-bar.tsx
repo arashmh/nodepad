@@ -97,7 +97,7 @@ export function StatusBar({
           </h1>
           {activeProjectName && (
             <div className="flex items-center gap-2 ml-1">
-              <span className="text-muted-foreground/20 font-mono text-[10px]">/</span>
+              <span className="text-muted-foreground/50 font-mono text-[10px]">/</span>
               <span className="font-mono text-[9px] text-muted-foreground font-bold uppercase tracking-[0.2em]">{activeProjectName}</span>
             </div>
           )}
@@ -107,7 +107,7 @@ export function StatusBar({
       <div className="flex items-center gap-4">
         {blockCount > 0 && (
           <div className="flex items-center gap-4">
-            <span className="font-mono text-[9px] text-muted-foreground/40 font-bold uppercase tracking-wider">
+            <span className="font-mono text-[9px] text-muted-foreground/60 font-bold uppercase tracking-wider">
               {blockCount} {blockCount === 1 ? 'node' : 'nodes'}
             </span>
             
@@ -131,7 +131,7 @@ export function StatusBar({
 
             {typeCounts.length > 0 && (
               <div className="flex items-center gap-1.5">
-                <span className="text-muted-foreground/20 italic">{"//"}</span>
+                <span className="text-muted-foreground/50 italic">{"//"}</span>
                 <div className="flex items-center gap-3">
                   {typeCounts.map(([type, count]) => {
                     const config =
@@ -200,7 +200,7 @@ export function StatusBar({
                 setIsAboutOpen(true)
                 onHelpTooltipDismiss?.()
               }}
-              className="p-1.5 rounded-sm transition-all duration-200 hover:bg-secondary text-muted-foreground/40 hover:text-foreground"
+              className="p-1.5 rounded-sm transition-all duration-200 hover:bg-secondary text-muted-foreground/60 hover:text-foreground"
               title="About nodepad"
             >
               <span className="font-mono text-[11px] font-black leading-none">?</span>

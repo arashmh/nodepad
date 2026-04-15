@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tiling View — nodepad Guide</title>
+<style>
+  :root { --bg: #0a0a0f; --surface: #12121a; --border: #1e1e2e; --text: #c8c8d4; --muted: #6e6e82; --accent: #4ade80; --accent-dim: #22543d; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace; background: var(--bg); color: var(--text); line-height: 1.7; padding: 3rem 2rem; max-width: 780px; margin: 0 auto; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 { font-size: 1.6rem; color: #fff; margin-bottom: 0.3rem; letter-spacing: 0.04em; }
+  .badge { display: inline-block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.15rem 0.6rem; border-radius: 3px; background: var(--accent-dim); color: var(--accent); margin-bottom: 1.5rem; }
+  h2 { font-size: 1rem; color: #fff; margin-top: 2.5rem; margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); letter-spacing: 0.03em; }
+  p { margin-bottom: 1rem; font-size: 0.88rem; }
+  ul, ol { margin-bottom: 1rem; padding-left: 1.5rem; font-size: 0.88rem; }
+  li { margin-bottom: 0.4rem; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.82rem; }
+  th { text-align: left; padding: 0.5rem 0.8rem; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.7rem; }
+  td { padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--border); }
+  code { background: var(--surface); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.82rem; color: var(--accent); }
+  .callout { background: var(--surface); border-left: 3px solid var(--accent); padding: 1rem 1.2rem; border-radius: 0 6px 6px 0; margin-bottom: 1.5rem; font-size: 0.85rem; }
+  .back { display: inline-block; margin-top: 2.5rem; font-size: 0.8rem; opacity: 0.6; }
+  .back:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>Tiling View</h1>
+<span class="badge">View</span>
+
+<p>
+  The Tiling view arranges your notes as a <strong>space-filling mosaic</strong> using a Binary Space Partitioning (BSP) tree. Think of it like a window tiling manager — the available area is recursively halved, alternating between vertical and horizontal splits, until every note fills exactly one rectangle. No whitespace is wasted.
+</p>
+
+<h2>Layout Algorithm</h2>
+<p>
+  Notes are laid out using a BSP approach: the viewport is split in half (vertically), then each half is split horizontally, and so on. Every note gets a tile that stretches to fill its allocated rectangle. The result is a dense mosaic where all visible space is used.
+</p>
+
+<h2>Pagination</h2>
+<p>Notes are grouped into pages of <strong>7 tiles each</strong>. Pages stack vertically and you scroll through them.</p>
+<table>
+  <tr><th>Tiles on page</th><th>Height</th></tr>
+  <tr><td>1–2</td><td>300px</td></tr>
+  <tr><td>3–4</td><td>60% of viewport</td></tr>
+  <tr><td>5–7</td><td>Full viewport height</td></tr>
+</table>
+
+<h2>Sorting &amp; Pinning</h2>
+<p>
+  Notes are sorted with <strong>pinned notes first</strong>, then by age (oldest first). Pinning a note promotes it to the front of the list, giving it the most prominent position on page 1.
+</p>
+
+<h2>Task Sticky Header</h2>
+<p>
+  If any <strong>task</strong>-type note exists, it's pulled out of the mosaic and displayed as a <strong>sticky header</strong> pinned to the top of the view. It remains visible as you scroll. This is the only card in tiling view that supports collapse/expand.
+</p>
+
+<h2>Connection Highlighting</h2>
+<div class="callout">
+  <strong>Hover</strong> a note's connection indicator → unrelated tiles dim to 15% opacity.<br>
+  <strong>Click</strong> the indicator → the highlight <strong>locks</strong> in place.<br>
+  <strong>Escape</strong> or click the background → clears the lock.
+</div>
+
+<h2>Tile Interactions</h2>
+<ul>
+  <li>Edit note text inline</li>
+  <li>Edit the AI annotation</li>
+  <li>Delete the note</li>
+  <li>Re-enrich (re-run AI analysis)</li>
+  <li>Change content type manually</li>
+  <li>Toggle pin</li>
+  <li>Toggle / delete sub-tasks (for task-type notes)</li>
+</ul>
+<p>There is <strong>no drag-and-drop</strong> and <strong>no manual resize</strong> — positions and sizes are fully automatic.</p>
+
+<h2>Minimap</h2>
+<p>
+  A floating minimap appears in the <strong>bottom-right corner</strong> when content overflows. Each page is shown as a button with colored dots (matching note content types). Hover for a tooltip listing that page's notes; click to smooth-scroll to that page.
+</p>
+
+<a class="back" href="guide-index.html">← Back to Guide Index</a>
+
+</body>
+</html>

@@ -4,7 +4,7 @@ import * as React from "react"
 import { createPortal } from "react-dom"
 import { CONTENT_TYPE_CONFIG, type ContentType } from "@/lib/content-types"
 import type { TextBlock } from "@/components/tile-card"
-import { ExternalLink, Link as LinkIcon, Pin, RefreshCw, Tag, X } from "lucide-react"
+import { ExternalLink, Link as LinkIcon, Pin, RefreshCw, Tag, Trash2, X } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
@@ -57,6 +57,7 @@ interface GraphDetailPanelProps {
   allBlocks: TextBlock[]
   onClose: () => void
   onSelectNode: (id: string) => void
+  onDelete: (id: string) => void
   onReEnrich: (id: string, newCategory?: string) => void
   onChangeType: (id: string, newType: ContentType) => void
   onTogglePin: (id: string) => void
@@ -69,6 +70,7 @@ export function GraphDetailPanel({
   allBlocks,
   onClose,
   onSelectNode,
+  onDelete,
   onReEnrich,
   onChangeType,
   onTogglePin,
@@ -130,12 +132,12 @@ export function GraphDetailPanel({
   if (!block) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center border-l border-border/60 bg-card/60">
-        <div className="flex items-center gap-0.5 opacity-20">
+        <div className="flex items-center gap-0.5 opacity-40">
           <span className="inline-block h-2 w-2 rounded-sm bg-foreground" />
           <span className="inline-block h-2 w-2 rounded-sm bg-foreground opacity-60" />
           <span className="inline-block h-2 w-2 rounded-sm bg-foreground opacity-30" />
         </div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/40">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
           Select a node to inspect
         </p>
       </div>
@@ -207,28 +209,35 @@ export function GraphDetailPanel({
               }
               setIsTypePickerOpen(v => !v)
             }}
-            className={`p-1 rounded-sm transition-opacity ${isTypePickerOpen ? "opacity-100 bg-black/20" : "opacity-40 hover:opacity-90"}`}
+            className={`p-1 rounded-sm transition-opacity ${isTypePickerOpen ? "opacity-100 bg-black/20" : "opacity-60 hover:opacity-90"}`}
             title="Change type"
           >
             <Tag className="h-3 w-3" />
           </button>
           <button
             onClick={() => onTogglePin(block.id)}
-            className={`p-1 rounded-sm transition-opacity ${block.isPinned ? "opacity-100" : "opacity-40 hover:opacity-90"}`}
+            className={`p-1 rounded-sm transition-opacity ${block.isPinned ? "opacity-100" : "opacity-60 hover:opacity-90"}`}
             title={block.isPinned ? "Unpin" : "Pin"}
           >
             <Pin className="h-3 w-3" />
           </button>
           <button
             onClick={() => onReEnrich(block.id)}
-            className="p-1 rounded-sm opacity-40 hover:opacity-90 transition-opacity"
+            className="p-1 rounded-sm opacity-60 hover:opacity-90 transition-opacity"
             title="Re-enrich"
           >
             <RefreshCw className="h-3 w-3" />
           </button>
           <button
+            onClick={() => onDelete(block.id)}
+            className="p-1 rounded-sm opacity-60 hover:opacity-90 hover:text-red-400 transition-all"
+            title="Delete note"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+          <button
             onClick={onClose}
-            className="p-1 rounded-sm opacity-40 hover:opacity-90 transition-opacity"
+            className="p-1 rounded-sm opacity-60 hover:opacity-90 transition-opacity"
             title="Close"
           >
             <X className="h-3.5 w-3.5" />

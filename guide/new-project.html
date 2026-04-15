@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Project — nodepad Guide</title>
+<style>
+  :root { --bg: #0a0a0f; --surface: #12121a; --border: #1e1e2e; --text: #c8c8d4; --muted: #6e6e82; --accent: #4ade80; --accent-dim: #22543d; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace; background: var(--bg); color: var(--text); line-height: 1.7; padding: 3rem 2rem; max-width: 780px; margin: 0 auto; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 { font-size: 1.6rem; color: #fff; margin-bottom: 0.3rem; letter-spacing: 0.04em; }
+  .badge { display: inline-block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.15rem 0.6rem; border-radius: 3px; background: #1a1a3a; color: #818cf8; margin-bottom: 1.5rem; }
+  h2 { font-size: 1rem; color: #fff; margin-top: 2.5rem; margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); letter-spacing: 0.03em; }
+  p { margin-bottom: 1rem; font-size: 0.88rem; }
+  ul { margin-bottom: 1rem; padding-left: 1.5rem; font-size: 0.88rem; }
+  li { margin-bottom: 0.4rem; }
+  code { background: var(--surface); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.82rem; color: var(--accent); }
+  .callout { background: var(--surface); border-left: 3px solid #818cf8; padding: 1rem 1.2rem; border-radius: 0 6px 6px 0; margin-bottom: 1.5rem; font-size: 0.85rem; }
+  .back { display: inline-block; margin-top: 2.5rem; font-size: 0.8rem; opacity: 0.6; }
+  .back:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>New Project</h1>
+<span class="badge">Navigate</span>
+
+<p>
+  Creates a brand-new, empty project (called a "Space" in the UI) and immediately switches to it.
+</p>
+
+<h2>How to Trigger</h2>
+<ul>
+  <li>Press <code>Ctrl+K</code> → select <strong>New Project</strong></li>
+  <li>Open the sidebar → click <strong>New Space</strong> in the footer</li>
+</ul>
+
+<h2>What Happens</h2>
+<div class="callout">
+  A single-click action — no wizard, no template picker, no prompt. The new project is created instantly and becomes the active canvas.
+</div>
+
+<p>The new project starts with:</p>
+<ul>
+  <li><strong>Name:</strong> "New Space"</li>
+  <li><strong>Notes:</strong> empty (no blocks)</li>
+  <li><strong>Collapsed state:</strong> nothing collapsed</li>
+  <li><strong>Ghost notes:</strong> none</li>
+</ul>
+
+<h2>After Creation</h2>
+<p>
+  The sidebar opens automatically so you can see the new project in the list. To rename it, hover over the project entry and click the <strong>pencil icon</strong>.
+</p>
+<p>
+  The project is appended to the end of the project list. A unique random ID is generated to prevent collisions.
+</p>
+
+<h2>First-Time Experience</h2>
+<p>
+  On a fresh install with no saved projects, the app creates one default project named <strong>"✨ New Research"</strong> — structurally identical to a manually created space, just with a friendlier name.
+</p>
+
+<a class="back" href="guide-index.html">← Back to Guide Index</a>
+
+</body>
+</html>

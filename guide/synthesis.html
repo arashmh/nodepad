@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synthesis — nodepad Guide</title>
+<style>
+  :root { --bg: #0a0a0f; --surface: #12121a; --border: #1e1e2e; --text: #c8c8d4; --muted: #6e6e82; --accent: #4ade80; --accent-dim: #22543d; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace; background: var(--bg); color: var(--text); line-height: 1.7; padding: 3rem 2rem; max-width: 780px; margin: 0 auto; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 { font-size: 1.6rem; color: #fff; margin-bottom: 0.3rem; letter-spacing: 0.04em; }
+  .badge { display: inline-block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.15rem 0.6rem; border-radius: 3px; background: #1a1a3a; color: #818cf8; margin-bottom: 1.5rem; }
+  h2 { font-size: 1rem; color: #fff; margin-top: 2.5rem; margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); letter-spacing: 0.03em; }
+  p { margin-bottom: 1rem; font-size: 0.88rem; }
+  ul { margin-bottom: 1rem; padding-left: 1.5rem; font-size: 0.88rem; }
+  li { margin-bottom: 0.4rem; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.82rem; }
+  th { text-align: left; padding: 0.5rem 0.8rem; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.7rem; }
+  td { padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--border); }
+  code { background: var(--surface); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.82rem; color: var(--accent); }
+  .callout { background: var(--surface); border-left: 3px solid #a78bfa; padding: 1rem 1.2rem; border-radius: 0 6px 6px 0; margin-bottom: 1.5rem; font-size: 0.85rem; }
+  .back { display: inline-block; margin-top: 2.5rem; font-size: 0.8rem; opacity: 0.6; }
+  .back:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>Synthesis</h1>
+<span class="badge">Navigate</span>
+
+<p>
+  Synthesis is nodepad's most distinctive feature. The AI watches your notes accumulate and, when enough cross-category material exists, generates <strong>ghost notes</strong> — emergent insights that surface ideas you haven't explicitly stated: tensions, paradoxes, unexpected dependencies, or bridges between different topics.
+</p>
+
+<div class="callout">
+  Ghost notes are <em>not</em> summaries. The system is explicitly instructed to be <strong>additive</strong> — saying something the notes <em>imply</em> but do not state.
+</div>
+
+<h2>How to Open the Panel</h2>
+<ul>
+  <li>Press <code>Ctrl+K</code> → select <strong>Synthesis</strong></li>
+  <li>Click the <strong>Synthesis toggle</strong> in the status bar (badge shows count when ghost notes are available)</li>
+  <li>Close with the <strong>X</strong> button, <strong>Escape</strong>, or by opening a different panel</li>
+</ul>
+
+<h2>When Synthesis Triggers</h2>
+<p>
+  Ghost generation is <strong>fully automatic</strong> — you never need to request it. It fires after each note is enriched (with a 2.5-second delay), but only when <strong>all</strong> of these conditions are met:
+</p>
+<table>
+  <tr><th>Condition</th><th>Threshold</th></tr>
+  <tr><td>Enriched notes in project</td><td>≥ 5</td></tr>
+  <tr><td>Distinct categories present</td><td>≥ 2</td></tr>
+  <tr><td>New notes since last generation</td><td>≥ 5</td></tr>
+  <tr><td>Time since last generation</td><td>≥ 5 minutes</td></tr>
+  <tr><td>Current ghost notes in panel</td><td>&lt; 5 (hard cap)</td></tr>
+</table>
+
+<h2>How Synthesis Works</h2>
+<p>
+  The system builds a curated context window of up to <strong>10 notes</strong>, biased toward recency and category diversity: it takes the 4 most recent notes, then fills in representatives from underrepresented categories. Previously generated ghost texts (up to 10) are sent back with an "AVOID" instruction, preventing near-duplicate syntheses.
+</p>
+
+<h2>What Each Ghost Note Shows</h2>
+<ul>
+  <li>A <strong>category label</strong> — a one-word "bridge topic" naming the cross-cutting theme</li>
+  <li>The <strong>thesis text</strong> — a concise 15–25 word insight, question, or productive tension</li>
+  <li>While generating: a <strong>"Synthesizing..."</strong> animation with bouncing dots</li>
+</ul>
+
+<h2>Accepting or Dismissing</h2>
+<div class="callout">
+  <strong>Add to canvas</strong> (✓ icon) — accepts the ghost note. It becomes a real <code>thesis</code>-type note on your canvas and goes through AI enrichment like any other note.<br><br>
+  <strong>Dismiss</strong> (✕ icon) — removes the ghost note permanently without adding it to the canvas.
+</div>
+
+<h2>Empty State</h2>
+<p>
+  When no ghost notes exist yet, the panel shows: <em>"Emergent theses will appear here"</em> with a sparkle icon. The footer reads: <em>"Generated from your writing patterns"</em>.
+</p>
+
+<a class="back" href="guide-index.html">← Back to Guide Index</a>
+
+</body>
+</html>

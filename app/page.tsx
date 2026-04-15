@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { Key } from "lucide-react"
 import { TilingArea } from "@/components/tiling-area"
 import { KanbanArea } from "@/components/kanban-area"
 import { GraphArea } from "@/components/graph-area"
@@ -59,6 +60,7 @@ export default function Page() {
   const blockHistoryRef = useRef<Record<string, TextBlock[][]>>({})
   const [undoToast, setUndoToast] = useState<string | null>(null)
   const undoToastTimer = useRef<NodeJS.Timeout | null>(null)
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number; label: string } | null>(null)
 
   const pushHistory = useCallback((projectId: string, currentBlocks: TextBlock[]) => {
     if (!blockHistoryRef.current[projectId]) blockHistoryRef.current[projectId] = []
@@ -565,9 +567,8 @@ export default function Page() {
     return () => window.removeEventListener("keydown", handleKeys)
   }, [isCommandKOpen, isGhostPanelOpen, undo])
 
-  const addBlock = useCallback(
-    (text: string, forcedType?: ContentType) => {
-      // Parse inline #type tag  e.g. "#claim The earth is 4.5 billion years old"
+  const addSingleBlock = useCallback(
+    (text: string, forcedType?: ContentType, skipEnrich?: boolean) => {
       let resolvedText = text
       let resolvedType = forcedType
 
@@ -589,21 +590,14 @@ export default function Page() {
 
       const newId = generateId()
 
-      // Types where the heuristic is syntactically unambiguous — the AI is also
-      // sent forcedType so it won't reclassify them.  We can show these types
-      // immediately because they will never change after enrichment.
       const heuristicType = resolvedType ?? detectContentType(resolvedText)
       const HIGH_CONFIDENCE_TYPES = new Set<ContentType>(["question", "reference", "quote", "task"])
       const enrichForcedType = resolvedType
         ?? (HIGH_CONFIDENCE_TYPES.has(heuristicType) ? heuristicType : undefined)
 
-      // For ambiguous types (claim, idea, reflection, …) the AI may return a
-      // different classification, so start as "general" during enrichment to
-      // avoid a jarring double-classification jump in the UI.
       const initialDisplayType: ContentType = resolvedType
         ?? (HIGH_CONFIDENCE_TYPES.has(heuristicType) ? heuristicType : "general")
 
-      pushHistory(activeProjectId, blocksRef.current)
       updateActiveProject(p => ({
         ...p,
         blocks: [...p.blocks, {
@@ -611,21 +605,175 @@ export default function Page() {
           text: resolvedText,
           timestamp: Date.now(),
           contentType: initialDisplayType,
-          isEnriching: true,
+          isEnriching: !skipEnrich,
         }]
       }))
 
-      setIsCommandKOpen(false)
-      enrichBlock(activeProjectId, newId, resolvedText, undefined, enrichForcedType).catch(console.error)
+      if (!skipEnrich) {
+        enrichBlock(activeProjectId, newId, resolvedText, undefined, enrichForcedType).catch(console.error)
+      }
+
+      return newId
     },
-    [activeProjectId, pushHistory, updateActiveProject, enrichBlock]
+    [activeProjectId, updateActiveProject, enrichBlock]
+  )
+
+  const addBlock = useCallback(
+    (text: string, forcedType?: ContentType) => {
+      pushHistory(activeProjectId, blocksRef.current)
+      setIsCommandKOpen(false)
+
+      // Strip <img> tags (and any self-closing HTML image tags) completely
+      let cleaned = text.replace(/<img[^>]*\/?>/gi, "")
+
+      // Extract all https URLs, deduplicate them
+      const urlRegex = /https?:\/\/[^\s,<>"')\]]+/gi
+      const urls = [...new Set(cleaned.match(urlRegex) || [])]
+
+      // Remaining text after stripping all URLs
+      const leftoverRaw = cleaned.replace(urlRegex, "")
+        .replace(/\[\^[\w_]+\]/g, "")          // strip footnote refs like [^1_1]
+        .replace(/<[^>]+>/g, "")                // strip remaining HTML tags
+
+      // Split leftover on section dividers (---, ⁂, or 3+ newlines) into separate chunks
+      const leftoverChunks = leftoverRaw
+        .split(/(?:\r?\n[\t ]*){2,}---(?:\r?\n[\t ]*){1,}|(?:\r?\n[\t ]*){2,}⁂(?:\r?\n[\t ]*){1,}|(?:\r?\n[\t ]*){3,}/)
+        .map(s => s.replace(/\s+/g, " ").trim())
+        .filter(s => s.length > 20)  // drop tiny fragments (headers, dividers, whitespace)
+
+      // If there are 2+ URLs, split into individual reference nodes + leftover chunks
+      if (urls.length >= 2) {
+        const total = urls.length + leftoverChunks.length
+        // Stagger: add all blocks immediately (no enrichment), then enrich in waves
+        const blockIds: { id: string; text: string; forcedType?: ContentType }[] = []
+
+        setBulkProgress({ done: 0, total, label: "Adding nodes..." })
+
+        for (const url of urls) {
+          const id = addSingleBlock(url, "reference", true)
+          blockIds.push({ id, text: url, forcedType: "reference" })
+        }
+        for (const chunk of leftoverChunks) {
+          const id = addSingleBlock(chunk, forcedType, true)
+          blockIds.push({ id, text: chunk, forcedType })
+        }
+
+        // Staggered enrichment: 400ms between each to avoid rate-limiting
+        const STAGGER_MS = 400
+        blockIds.forEach((entry, i) => {
+          setTimeout(() => {
+            const heuristicType = entry.forcedType ?? detectContentType(entry.text)
+            const HIGH_CONFIDENCE_TYPES = new Set<ContentType>(["question", "reference", "quote", "task"])
+            const enrichForcedType = entry.forcedType
+              ?? (HIGH_CONFIDENCE_TYPES.has(heuristicType) ? heuristicType : undefined)
+
+            // Mark as enriching
+            updateActiveProject(p => ({
+              ...p,
+              blocks: p.blocks.map(b => b.id === entry.id ? { ...b, isEnriching: true } : b)
+            }))
+
+            enrichBlock(activeProjectId, entry.id, entry.text, undefined, enrichForcedType)
+              .then(() => {
+                setBulkProgress(prev => {
+                  if (!prev) return null
+                  const next = { done: prev.done + 1, total: prev.total, label: `Enriching ${prev.done + 1} of ${prev.total}` }
+                  if (next.done >= next.total) {
+                    // Clear after a beat
+                    setTimeout(() => setBulkProgress(null), 1800)
+                    return { ...next, label: `Done · ${next.total} nodes added` }
+                  }
+                  return next
+                })
+              })
+              .catch(() => {
+                setBulkProgress(prev => {
+                  if (!prev) return null
+                  const next = { done: prev.done + 1, total: prev.total, label: `Enriching ${prev.done + 1} of ${prev.total}` }
+                  if (next.done >= next.total) {
+                    setTimeout(() => setBulkProgress(null), 1800)
+                    return { ...next, label: `Done · ${next.total} nodes added` }
+                  }
+                  return next
+                })
+              })
+          }, i * STAGGER_MS)
+        })
+      } else if (leftoverChunks.length >= 2) {
+        // No bulk URLs, but text has section dividers — split into separate blocks
+        const total = leftoverChunks.length
+        const blockIds: { id: string; text: string; forcedType?: ContentType }[] = []
+        setBulkProgress({ done: 0, total, label: "Adding nodes..." })
+
+        for (const chunk of leftoverChunks) {
+          const id = addSingleBlock(chunk, forcedType, true)
+          blockIds.push({ id, text: chunk, forcedType })
+        }
+
+        const STAGGER_MS = 400
+        blockIds.forEach((entry, i) => {
+          setTimeout(() => {
+            const heuristicType = entry.forcedType ?? detectContentType(entry.text)
+            const HIGH_CONFIDENCE_TYPES = new Set<ContentType>(["question", "reference", "quote", "task"])
+            const enrichForcedType = entry.forcedType
+              ?? (HIGH_CONFIDENCE_TYPES.has(heuristicType) ? heuristicType : undefined)
+
+            updateActiveProject(p => ({
+              ...p,
+              blocks: p.blocks.map(b => b.id === entry.id ? { ...b, isEnriching: true } : b)
+            }))
+
+            enrichBlock(activeProjectId, entry.id, entry.text, undefined, enrichForcedType)
+              .then(() => {
+                setBulkProgress(prev => {
+                  if (!prev) return null
+                  const next = { done: prev.done + 1, total: prev.total, label: `Enriching ${prev.done + 1} of ${prev.total}` }
+                  if (next.done >= next.total) {
+                    setTimeout(() => setBulkProgress(null), 1800)
+                    return { ...next, label: `Done · ${next.total} nodes added` }
+                  }
+                  return next
+                })
+              })
+              .catch(() => {
+                setBulkProgress(prev => {
+                  if (!prev) return null
+                  const next = { done: prev.done + 1, total: prev.total, label: `Enriching ${prev.done + 1} of ${prev.total}` }
+                  if (next.done >= next.total) {
+                    setTimeout(() => setBulkProgress(null), 1800)
+                    return { ...next, label: `Done · ${next.total} nodes added` }
+                  }
+                  return next
+                })
+              })
+          }, i * STAGGER_MS)
+        })
+      } else {
+        // Single URL or no URLs — add as one block (original behaviour)
+        addSingleBlock(cleaned, forcedType)
+      }
+    },
+    [activeProjectId, pushHistory, addSingleBlock, updateActiveProject, enrichBlock]
   )
 
   const deleteBlock = useCallback((id: string) => {
     pushHistory(activeProjectId, blocksRef.current)
+    // Clear debounce timer for this block (avoids wasted API call after delete)
+    if (debounceTimers.current[activeProjectId]?.[id]) {
+      clearTimeout(debounceTimers.current[activeProjectId][id])
+      delete debounceTimers.current[activeProjectId][id]
+    }
+    // Clear highlighted state if it points to the deleted block
+    setHighlightedBlockId(prev => prev === id ? null : prev)
     updateActiveProject(p => ({
       ...p,
-      blocks: p.blocks.filter(b => b.id !== id)
+      blocks: p.blocks
+        .filter(b => b.id !== id)
+        .map(b => b.influencedBy?.includes(id)
+          ? { ...b, influencedBy: b.influencedBy.filter(ref => ref !== id) }
+          : b
+        ),
+      collapsedIds: p.collapsedIds.filter(cid => cid !== id),
     }))
   }, [activeProjectId, pushHistory, updateActiveProject])
 
@@ -881,25 +1029,34 @@ export default function Page() {
         />
 
         {!settings.apiKey && (
-          <div className="flex items-center justify-center gap-3 px-4 py-2 bg-amber-950/80 border-b border-amber-800/60 text-amber-200 text-xs shrink-0">
-            <span className="opacity-80">⚡ AI enrichment is inactive — add an OpenRouter API key to classify and annotate your notes.</span>
-            <div className="flex items-center gap-2 shrink-0">
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="flex items-center justify-center gap-4 px-5 py-2.5 bg-gradient-to-r from-amber-950/60 via-amber-950/80 to-amber-950/60 border-b border-amber-800/40 text-amber-200/90 text-xs tracking-wide shrink-0"
+          >
+            <div className="flex items-center gap-2">
+              <Key className="w-3.5 h-3.5 opacity-60" />
+              <span className="opacity-80">Connect an OpenRouter API key to unlock AI classification, annotation & web grounding.</span>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
               <button
                 onClick={() => { setIsSidebarOpen(true); setJumpToSettings(true) }}
-                className="px-2.5 py-1 rounded bg-amber-700/60 hover:bg-amber-600/70 text-amber-100 font-medium transition-colors cursor-pointer border border-amber-600/50"
+                className="px-3 py-1 rounded-md bg-amber-500/15 hover:bg-amber-500/25 text-amber-100 font-medium transition-all cursor-pointer border border-amber-500/30 hover:border-amber-500/50 backdrop-blur-sm"
               >
-                Add API key →
+                Open Settings
               </button>
+              <span className="text-amber-700/60">·</span>
               <a
                 href="https://openrouter.ai/keys"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="opacity-60 hover:opacity-90 transition-opacity underline underline-offset-2"
+                className="opacity-50 hover:opacity-80 transition-opacity underline underline-offset-2 decoration-amber-600/40"
               >
-                Get a key ↗
+                Get a free key
               </a>
             </div>
-          </div>
+          </motion.div>
         )}
 
         <div className="flex flex-1 overflow-hidden relative">
@@ -943,6 +1100,7 @@ export default function Page() {
                   blocks={activeProject.blocks}
                   ghostNote={ghostNotes[ghostNotes.length - 1]}
                   projectName={activeProject.name}
+                  onDelete={deleteBlock}
                   onReEnrich={reEnrichBlock}
                   onChangeType={handleChangeType}
                   onTogglePin={handleTogglePin}
@@ -978,6 +1136,33 @@ export default function Page() {
             >
               <div className="px-3 py-1.5 rounded-sm bg-black/90 border border-white/15 backdrop-blur-md shadow-xl">
                 <span className="font-mono text-[10px] text-white/70 tracking-tight whitespace-nowrap">{undoToast}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Bulk import progress */}
+        <AnimatePresence>
+          {bulkProgress && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="absolute bottom-[72px] right-4 z-[130] pointer-events-none"
+            >
+              <div className="flex items-center gap-3 px-4 py-2 rounded-md bg-black/90 border border-primary/20 backdrop-blur-md shadow-xl">
+                <div className="relative h-1 w-24 rounded-full bg-white/10 overflow-hidden">
+                  <motion.div
+                    className="absolute inset-y-0 left-0 rounded-full bg-primary/70"
+                    initial={{ width: "0%" }}
+                    animate={{ width: `${Math.round((bulkProgress.done / bulkProgress.total) * 100)}%` }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  />
+                </div>
+                <span className="font-mono text-[10px] text-white/60 tracking-tight whitespace-nowrap">
+                  {bulkProgress.label}
+                </span>
               </div>
             </motion.div>
           )}

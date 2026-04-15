@@ -280,7 +280,7 @@ export function ProjectSidebar({
                       value={draft.apiKey}
                       onChange={e => setDraft(d => ({ ...d, apiKey: e.target.value }))}
                       placeholder="sk-or-v1-..."
-                      className="flex-1 bg-transparent font-mono text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40"
+                      className="flex-1 bg-transparent font-mono text-[11px] text-foreground outline-none placeholder:text-muted-foreground/60"
                       autoComplete="off"
                       spellCheck={false}
                     />
@@ -365,7 +365,7 @@ export function ProjectSidebar({
                     disabled={!selectedModel.supportsGrounding}
                     className={`relative shrink-0 h-5 w-9 rounded-full transition-all duration-200 ${
                       draft.webGrounding && selectedModel.supportsGrounding ? "bg-primary" : "bg-white/10"
-                    } disabled:opacity-30 disabled:cursor-not-allowed`}
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all duration-200 ${
                       draft.webGrounding && selectedModel.supportsGrounding ? "left-5" : "left-0.5"

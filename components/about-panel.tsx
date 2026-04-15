@@ -142,7 +142,7 @@ export function AboutPanel({ open, onClose }: AboutPanelProps) {
             </a>
             <CopyEmailButton />
           </p>
-          <p className="mt-1.5 text-xs text-muted-foreground/35">
+          <p className="mt-1.5 text-xs text-muted-foreground/55">
             This app uses anonymous analytics (Umami) to track feature interactions — views switched, exports, synthesis events. No note content, no personal data, no cross-site tracking.
           </p>
         </div>
@@ -333,7 +333,7 @@ export function AboutPanel({ open, onClose }: AboutPanelProps) {
               <span className="inline-block h-1.5 w-1.5 rounded-sm bg-primary" />
               <span className="inline-block h-1.5 w-1.5 rounded-sm bg-primary/60" />
               <span className="inline-block h-1.5 w-1.5 rounded-sm bg-primary/30" />
-              <span className="font-mono text-[10px] font-bold text-muted-foreground/40 ml-1">nodepad</span>
+              <span className="font-mono text-[10px] font-bold text-muted-foreground/60 ml-1">nodepad</span>
             </div>
           </div>
 

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clear Canvas — nodepad Guide</title>
+<style>
+  :root { --bg: #0a0a0f; --surface: #12121a; --border: #1e1e2e; --text: #c8c8d4; --muted: #6e6e82; --accent: #4ade80; --accent-dim: #22543d; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace; background: var(--bg); color: var(--text); line-height: 1.7; padding: 3rem 2rem; max-width: 780px; margin: 0 auto; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 { font-size: 1.6rem; color: #fff; margin-bottom: 0.3rem; letter-spacing: 0.04em; }
+  .badge { display: inline-block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; padding: 0.15rem 0.6rem; border-radius: 3px; background: #2a1a1a; color: #f87171; margin-bottom: 1.5rem; }
+  h2 { font-size: 1rem; color: #fff; margin-top: 2.5rem; margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); letter-spacing: 0.03em; }
+  p { margin-bottom: 1rem; font-size: 0.88rem; }
+  ul { margin-bottom: 1rem; padding-left: 1.5rem; font-size: 0.88rem; }
+  li { margin-bottom: 0.4rem; }
+  code { background: var(--surface); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.82rem; color: var(--accent); }
+  .callout { background: var(--surface); border-left: 3px solid #fbbf24; padding: 1rem 1.2rem; border-radius: 0 6px 6px 0; margin-bottom: 1.5rem; font-size: 0.85rem; }
+  .back { display: inline-block; margin-top: 2.5rem; font-size: 0.8rem; opacity: 0.6; }
+  .back:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>Clear Canvas</h1>
+<span class="badge">Action</span>
+
+<p>
+  Removes <strong>all notes</strong> from the current project. The project itself remains — only the notes inside it are cleared.
+</p>
+
+<h2>How to Trigger</h2>
+<ul>
+  <li>Press <code>Ctrl+K</code> → select <strong>Clear canvas</strong></li>
+</ul>
+
+<h2>What Gets Cleared</h2>
+<ul>
+  <li><strong>All blocks (notes)</strong> → set to empty array</li>
+  <li><strong>All collapsed states</strong> → reset</li>
+</ul>
+
+<h2>What's Preserved</h2>
+<ul>
+  <li>The <strong>project itself</strong> — name, ID, and position in the list remain intact</li>
+  <li><strong>Ghost notes</strong> — the synthesis panel is untouched</li>
+</ul>
+
+<h2>No Confirmation Dialog</h2>
+<div class="callout">
+  The action executes <strong>immediately</strong> — there's no "Are you sure?" prompt. However, it is fully <strong>undoable</strong>.
+</div>
+
+<h2>Undo</h2>
+<p>
+  Before clearing, the current notes are pushed onto an <strong>undo history stack</strong> (up to 20 snapshots). Press <code>Ctrl+Z</code> (or <code>Cmd+Z</code> on Mac) to restore everything. A brief toast notification confirms:
+</p>
+<ul>
+  <li><strong>"↩ Undone"</strong> — notes successfully restored</li>
+  <li><strong>"Nothing to undo"</strong> — the undo stack is empty</li>
+</ul>
+
+<a class="back" href="guide-index.html">← Back to Guide Index</a>
+
+</body>
+</html>
