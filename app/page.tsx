@@ -490,6 +490,34 @@ export default function Page() {
               })
             })
 
+            // Spawn child blocks from extracted academic sections (abstract, results, etc.)
+            if (data.extractedSections && data.extractedSections.length > 0) {
+              const parentId = id
+              const CHILD_STAGGER_MS = 500
+              data.extractedSections.forEach((section: { heading: string; text: string }, idx: number) => {
+                setTimeout(() => {
+                  const childId = generateId()
+                  // Add child block with influencedBy pointing to parent — no forced type, let AI decide
+                  setProjects((current: Project[]) => current.map(proj => {
+                    if (proj.id !== projectId) return proj
+                    return {
+                      ...proj,
+                      blocks: [...proj.blocks, {
+                        id: childId,
+                        text: section.text,
+                        timestamp: Date.now(),
+                        contentType: "general" as ContentType,
+                        isEnriching: true,
+                        influencedBy: [parentId],
+                        sourceSection: section.heading,
+                      }]
+                    }
+                  }))
+                  enrichBlock(projectId, childId, section.text).catch(console.error)
+                }, idx * CHILD_STAGGER_MS)
+              })
+            }
+
             setTimeout(() => generateGhostNote(projectId), 2500)
         } catch (e: any) {
           console.error(e)

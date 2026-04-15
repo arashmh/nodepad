@@ -107,7 +107,7 @@ export function StatusBar({
       <div className="flex items-center gap-4">
         {blockCount > 0 && (
           <div className="flex items-center gap-4">
-            <span className="font-mono text-[9px] text-muted-foreground/60 font-bold uppercase tracking-wider">
+<span className="font-mono text-[10px] text-foreground/70 font-bold uppercase tracking-wider">
               {blockCount} {blockCount === 1 ? 'node' : 'nodes'}
             </span>
             

@@ -110,7 +110,7 @@ const JSON_SCHEMA = {
 
 // ── URL metadata (via server route to bypass CORS) ────────────────────────────
 
-type UrlMeta = { title: string; description: string; excerpt: string; statusCode: number }
+type UrlMeta = { title: string; description: string; excerpt: string; sections: { heading: string; text: string }[]; statusCode: number }
 
 async function fetchUrlMetaViaServer(url: string): Promise<UrlMeta | null> {
   try {
@@ -143,6 +143,8 @@ export interface EnrichResult {
   influencedByIndices: number[]
   isUnrelated: boolean
   mergeWithIndex: number | null
+  /** Academic sections extracted from URL (abstract, results, etc.) */
+  extractedSections?: { heading: string; text: string }[]
 }
 
 export async function enrichBlockClient(
@@ -185,6 +187,7 @@ You have live web access. For this note type, include 1–2 real source citation
 
   // URL prefetch (reference type only) — still server-assisted for CORS bypass
   let urlContext = ""
+  let extractedSections: { heading: string; text: string }[] = []
   const isUrl = /^https?:\/\//i.test(text.trim())
   if (effectiveType === "reference" && isUrl) {
     const meta = await fetchUrlMetaViaServer(text.trim())
@@ -195,10 +198,16 @@ You have live web access. For this note type, include 1–2 real source citation
     } else if (meta.statusCode >= 400) {
       urlContext = `\n\n<url_fetch_result status="${meta.statusCode}">URL returned an error (${meta.statusCode}). Annotate based on the URL alone.</url_fetch_result>`
     } else {
+      // Stash extracted sections for child-block creation
+      if (meta.sections && meta.sections.length > 0) {
+        extractedSections = meta.sections
+      }
+
       const parts = [
         meta.title       ? `Title: ${meta.title}` : "",
         meta.description ? `Description: ${meta.description}` : "",
         meta.excerpt     ? `Content excerpt: ${meta.excerpt}` : "",
+        ...extractedSections.map(s => `[${s.heading.toUpperCase()}]: ${s.text}`),
       ].filter(Boolean).join("\n")
       urlContext = parts
         ? `\n\n<url_fetch_result status="ok">\n${parts}\n</url_fetch_result>`
@@ -242,6 +251,10 @@ You have live web access. For this note type, include 1–2 real source citation
   const result: EnrichResult = JSON.parse(content)
   if (result.confidence != null) {
     result.confidence = Math.min(100, Math.max(0, Math.round(result.confidence)))
+  }
+  // Attach extracted academic sections (if any) for child-block creation
+  if (extractedSections.length > 0) {
+    result.extractedSections = extractedSections
   }
   return result
 }

@@ -4,7 +4,114 @@ type UrlMeta = {
   title: string
   description: string
   excerpt: string
+  sections: { heading: string; text: string }[]
   statusCode: number
+}
+
+// ── Section extraction for academic pages ─────────────────────────────────────
+
+const SECTION_KEYWORDS = [
+  "abstract",
+  "summary",
+  "introduction",
+  "background",
+  "problem",
+  "motivation",
+  "methods",
+  "methodology",
+  "approach",
+  "results",
+  "findings",
+  "discussion",
+  "conclusion",
+  "implications",
+]
+
+function extractSections(html: string): { heading: string; text: string }[] {
+  // Strip scripts, styles, nav, footer, header, aside
+  const stripped = html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<nav[\s\S]*?<\/nav>/gi, "")
+    .replace(/<footer[\s\S]*?<\/footer>/gi, "")
+    .replace(/<header[\s\S]*?<\/header>/gi, "")
+    .replace(/<aside[\s\S]*?<\/aside>/gi, "")
+
+  const sections: { heading: string; text: string }[] = []
+
+  // Strategy 1: Look for heading tags (h1-h4) whose text matches academic keywords
+  const headingRegex = /<h[1-4][^>]*>([\s\S]*?)<\/h[1-4]>/gi
+  let match: RegExpExecArray | null
+  const headingPositions: { heading: string; index: number }[] = []
+
+  while ((match = headingRegex.exec(stripped)) !== null) {
+    const headingText = match[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim().toLowerCase()
+    const keyword = SECTION_KEYWORDS.find(k => headingText.includes(k))
+    if (keyword) {
+      headingPositions.push({ heading: keyword, index: match.index + match[0].length })
+    }
+  }
+
+  // Extract text between matched headings (up to next heading or 3000 chars)
+  for (let i = 0; i < headingPositions.length; i++) {
+    const start = headingPositions[i].index
+    const end = i + 1 < headingPositions.length
+      ? headingPositions[i + 1].index - 100  // rough offset for the heading tag itself
+      : start + 4000
+    const sectionHtml = stripped.slice(start, Math.min(end, start + 4000))
+    const text = sectionHtml
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 2000)
+    if (text.length > 80) {
+      sections.push({ heading: headingPositions[i].heading, text })
+    }
+  }
+
+  // Strategy 2: If no headings matched, try <section> or <div> with id/class containing keywords
+  if (sections.length === 0) {
+    for (const keyword of SECTION_KEYWORDS) {
+      const attrRegex = new RegExp(
+        `<(?:section|div)[^>]*(?:id|class)="[^"]*${keyword}[^"]*"[^>]*>([\\s\\S]*?)(?=<(?:section|div)[^>]*(?:id|class)=|$)`,
+        "i"
+      )
+      const m = stripped.match(attrRegex)
+      if (m) {
+        const text = m[1]
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 2000)
+        if (text.length > 80) {
+          sections.push({ heading: keyword, text })
+        }
+      }
+    }
+  }
+
+  // Strategy 3: Look for "Abstract" etc. as bold/strong text starting a paragraph
+  if (sections.length === 0) {
+    for (const keyword of ["abstract", "summary", "results", "conclusion"]) {
+      const boldRegex = new RegExp(
+        `<(?:strong|b|em)[^>]*>\\s*${keyword}[:\\.]?\\s*<\\/(?:strong|b|em)>([\\s\\S]{80,2000}?)(?=<(?:h[1-4]|strong|b)[^>]*>|$)`,
+        "i"
+      )
+      const m = stripped.match(boldRegex)
+      if (m) {
+        const text = m[1]
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 2000)
+        if (text.length > 80) {
+          sections.push({ heading: keyword, text })
+        }
+      }
+    }
+  }
+
+  return sections.slice(0, 6) // cap at 6 sections
 }
 
 function extractMeta(html: string): Omit<UrlMeta, "statusCode"> {
@@ -30,9 +137,11 @@ function extractMeta(html: string): Omit<UrlMeta, "statusCode"> {
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 600)
+    .slice(0, 1500)
 
-  return { title: title.slice(0, 200), description: description.slice(0, 400), excerpt }
+  const sections = extractSections(html)
+
+  return { title: title.slice(0, 200), description: description.slice(0, 400), excerpt, sections }
 }
 
 async function fetchUrlMeta(url: string): Promise<UrlMeta | null> {

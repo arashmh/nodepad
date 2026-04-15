@@ -211,6 +211,24 @@
   animation: shimmer 3.5s ease-in-out infinite;
 }
 
+/* Enriching ring — high-contrast pulsing outline for processing nodes */
+.enriching-ring {
+  outline: 2px solid oklch(0.75 0.15 160 / 0.7);
+  outline-offset: -1px;
+  animation: enriching-pulse 2s ease-in-out infinite;
+}
+
+@keyframes enriching-pulse {
+  0%, 100% {
+    outline-color: oklch(0.75 0.15 160 / 0.7);
+    box-shadow: 0 0 8px oklch(0.7 0.12 160 / 0.2);
+  }
+  50% {
+    outline-color: oklch(0.85 0.18 160 / 0.9);
+    box-shadow: 0 0 16px oklch(0.7 0.12 160 / 0.35);
+  }
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }

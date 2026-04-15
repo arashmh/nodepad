@@ -257,6 +257,8 @@ export const TileCard = memo(function TileCard({
     <div
       ref={cardRef}
       className={`group relative flex h-full w-full flex-col overflow-hidden border transition-all duration-200 ${
+        block.isEnriching ? "enriching-ring" : ""
+      } ${
         isHighlighted ? "z-10 scale-[1.002] border-primary/50 ring-2 ring-primary/20" : "border-border/50"
       } ${
         isTask ? "bg-[color-mix(in_oklch,var(--type-task)_8%,transparent)] border-[color-mix(in_oklch,var(--type-task)_25%,transparent)] shadow-[color-mix(in_oklch,var(--type-task)_8%,transparent)]" : "bg-card/30"

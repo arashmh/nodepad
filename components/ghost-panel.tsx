@@ -55,9 +55,9 @@ export function GhostPanel({ ghostNotes, isOpen, onClose, onClaim, onDismiss }: 
         {/* Note list */}
         <div className="flex-1 overflow-y-auto custom-scrollbar py-3 px-3 space-y-3">
           {ghostNotes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-32 gap-3 opacity-40">
-              <Sparkles className="h-5 w-5" />
-              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-center leading-relaxed">
+            <div className="flex flex-col items-center justify-center h-32 gap-3 opacity-70">
+              <Sparkles className="h-5 w-5 text-white/60" />
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-center leading-relaxed text-white/50">
                 Emergent theses<br />will appear here
               </p>
             </div>
