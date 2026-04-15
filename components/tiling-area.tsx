@@ -51,6 +51,7 @@ interface TilingAreaProps {
   onToggleSubTask: (id: string, subTaskId: string) => void
   onDeleteSubTask: (id: string, subTaskId: string) => void
   highlightedBlockId?: string | null
+  highlightedBlockIds?: Set<string>
   onHighlight: (id: string | null) => void
 }
 
@@ -67,6 +68,7 @@ export function TilingArea({
   onToggleSubTask,
   onDeleteSubTask,
   highlightedBlockId,
+  highlightedBlockIds,
   onHighlight,
 }: TilingAreaProps) {
   const mod = useModKey()
@@ -199,7 +201,7 @@ export function TilingArea({
               onTogglePin={onTogglePin}
               onToggleSubTask={onToggleSubTask}
               onDeleteSubTask={onDeleteSubTask}
-              isHighlighted={highlightedBlockId === block.id}
+              isHighlighted={highlightedBlockId === block.id || (highlightedBlockIds?.has(block.id) ?? false)}
               onHighlight={onHighlight}
               onConnectionHover={handleConnectionHover}
               onConnectionLock={handleConnectionLock}
@@ -246,7 +248,7 @@ export function TilingArea({
               onTogglePin={onTogglePin}
               onToggleSubTask={onToggleSubTask}
               onDeleteSubTask={onDeleteSubTask}
-              isHighlighted={highlightedBlockId === taskBlock.id}
+              isHighlighted={highlightedBlockId === taskBlock.id || (highlightedBlockIds?.has(taskBlock.id) ?? false)}
               onHighlight={onHighlight}
               onConnectionHover={handleConnectionHover}
               onConnectionLock={handleConnectionLock}

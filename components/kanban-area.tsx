@@ -20,6 +20,7 @@ interface KanbanAreaProps {
   onToggleSubTask: (id: string, subTaskId: string) => void
   onDeleteSubTask: (id: string, subTaskId: string) => void
   collapsedIds: Set<string>
+  highlightedBlockIds?: Set<string>
 }
 
 export function KanbanArea({
@@ -34,6 +35,7 @@ export function KanbanArea({
   onToggleSubTask,
   onDeleteSubTask,
   collapsedIds,
+  highlightedBlockIds,
 }: KanbanAreaProps) {
   const mod = useModKey()
   const [hoveredConnectionId, setHoveredConnectionId] = useState<string | null>(null)
@@ -150,6 +152,7 @@ export function KanbanArea({
                       <TileCard
                         block={block}
                         isCollapsed={collapsed}
+                        isHighlighted={highlightedBlockIds?.has(block.id) ?? false}
                         onDelete={onDelete}
                         onEdit={onEdit}
                         onEditAnnotation={onEditAnnotation}

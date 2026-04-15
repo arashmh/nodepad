@@ -1,13 +1,16 @@
 "use client"
 
 import { AnimatePresence, motion } from "framer-motion"
-import { Check, Sparkles, X } from "lucide-react"
+import { Check, ChevronDown, ChevronRight, Sparkles, X } from "lucide-react"
+import { useState } from "react"
 
 export interface GhostNote {
   id: string
   text: string
   category: string
   isGenerating: boolean
+  sourceBlockIds?: string[]
+  sourceBlockPreviews?: { id: string; text: string; category?: string; contentType?: string }[]
 }
 
 interface GhostPanelProps {
@@ -16,9 +19,12 @@ interface GhostPanelProps {
   onClose: () => void
   onClaim: (id: string) => void
   onDismiss: (id: string) => void
+  onHoverSources: (ids: string[]) => void
+  onScrollToBlock?: (id: string) => void
 }
 
-export function GhostPanel({ ghostNotes, isOpen, onClose, onClaim, onDismiss }: GhostPanelProps) {
+export function GhostPanel({ ghostNotes, isOpen, onClose, onClaim, onDismiss, onHoverSources, onScrollToBlock }: GhostPanelProps) {
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   return (
     <div
       style={{
@@ -70,7 +76,9 @@ export function GhostPanel({ ghostNotes, isOpen, onClose, onClaim, onDismiss }: 
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: 20, transition: { duration: 0.15 } }}
                   transition={{ duration: 0.2 }}
-                  className="rounded-md border border-primary/20 bg-primary/5 p-3 flex flex-col gap-3"
+                  className="rounded-md border border-primary/20 bg-primary/5 p-3 flex flex-col gap-3 cursor-pointer"
+                  onMouseEnter={() => note.sourceBlockIds && onHoverSources(note.sourceBlockIds)}
+                  onMouseLeave={() => onHoverSources([])}
                 >
                   {/* Row: sparkles + category + dismiss */}
                   <div className="flex items-center justify-between">
@@ -84,7 +92,7 @@ export function GhostPanel({ ghostNotes, isOpen, onClose, onClaim, onDismiss }: 
                     </div>
                     {!note.isGenerating && (
                       <button
-                        onClick={() => onDismiss(note.id)}
+                        onClick={(e) => { e.stopPropagation(); onDismiss(note.id) }}
                         className="h-5 w-5 flex items-center justify-center rounded-sm text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
                       >
                         <X className="h-3 w-3" />
@@ -105,15 +113,75 @@ export function GhostPanel({ ghostNotes, isOpen, onClose, onClaim, onDismiss }: 
                       </p>
                     </div>
                   ) : (
-                    <p className="text-[13px] font-medium leading-relaxed text-foreground/75">
+                    <p
+                      className="text-[13px] font-medium leading-relaxed text-foreground/75"
+                      onClick={() => setExpandedId(prev => prev === note.id ? null : note.id)}
+                    >
                       {note.text}
                     </p>
+                  )}
+
+                  {/* Source blocks detail — expandable */}
+                  {!note.isGenerating && note.sourceBlockPreviews && note.sourceBlockPreviews.length > 0 && (
+                    <>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setExpandedId(prev => prev === note.id ? null : note.id) }}
+                        className="flex items-center gap-1.5 text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors"
+                      >
+                        {expandedId === note.id
+                          ? <ChevronDown className="h-3 w-3" />
+                          : <ChevronRight className="h-3 w-3" />
+                        }
+                        <span className="font-mono text-[8px] uppercase tracking-wider">
+                          {note.sourceBlockPreviews.length} source nodes
+                        </span>
+                      </button>
+
+                      <AnimatePresence>
+                        {expandedId === note.id && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="flex flex-col gap-1.5 pt-1 border-t border-primary/10">
+                              {note.sourceBlockPreviews.map(src => (
+                                <button
+                                  key={src.id}
+                                  onClick={(e) => { e.stopPropagation(); onScrollToBlock?.(src.id) }}
+                                  onMouseEnter={() => onHoverSources([src.id])}
+                                  onMouseLeave={() => note.sourceBlockIds && onHoverSources(note.sourceBlockIds)}
+                                  className="flex items-start gap-2 p-1.5 rounded-sm hover:bg-white/5 transition-colors text-left group"
+                                >
+                                  <span
+                                    className="mt-0.5 h-1.5 w-1.5 rounded-full shrink-0"
+                                    style={{ background: src.contentType ? `var(--type-${src.contentType})` : "var(--muted-foreground)" }}
+                                  />
+                                  <div className="flex flex-col gap-0.5 min-w-0">
+                                    {src.category && (
+                                      <span className="font-mono text-[7px] uppercase tracking-widest text-muted-foreground/40">
+                                        {src.category}
+                                      </span>
+                                    )}
+                                    <span className="text-[11px] leading-snug text-foreground/60 group-hover:text-foreground/80 line-clamp-2 transition-colors">
+                                      {src.text.length > 120 ? src.text.slice(0, 120) + "…" : src.text}
+                                    </span>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </>
                   )}
 
                   {/* Add button */}
                   {!note.isGenerating && (
                     <button
-                      onClick={() => onClaim(note.id)}
+                      onClick={(e) => { e.stopPropagation(); onClaim(note.id) }}
                       className="flex items-center gap-1.5 w-full justify-center rounded-sm bg-primary/15 hover:bg-primary/25 px-2.5 py-1.5 font-mono text-[9px] font-black uppercase tracking-wider text-primary transition-colors"
                     >
                       <Check className="h-3 w-3 stroke-[3px]" />

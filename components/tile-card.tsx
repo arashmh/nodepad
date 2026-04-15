@@ -278,7 +278,7 @@ export const TileCard = memo(function TileCard({
         boxShadow: isTask
           ? "none"
           : block.contentType === "thesis"
-            ? `0 0 20px rgba(255, 215, 0, 0.1), inset 0 1px 0 0 rgba(255,255,255,0.05)`
+            ? `0 0 24px rgba(255, 160, 40, 0.2), 0 0 8px rgba(255, 140, 20, 0.15), inset 0 1px 0 0 rgba(255,255,255,0.08)`
             : block.isPinned
               ? `0 0 15px color-mix(in oklch, ${accent} 20%, transparent), inset 0 1px 0 0 rgba(255,255,255,0.05)`
               : isEditing

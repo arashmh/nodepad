@@ -43,6 +43,7 @@ export default function Page() {
   const [projects, setProjects] = useState<Project[]>([])
   const [activeProjectId, setActiveProjectId] = useState<string>("")
   const [highlightedBlockId, setHighlightedBlockId] = useState<string | null>(null)
+  const [highlightedBlockIds, setHighlightedBlockIds] = useState<Set<string>>(new Set())
   const [isLoaded, setIsLoaded] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isIndexOpen, setIsIndexOpen] = useState(false)
@@ -329,15 +330,23 @@ export default function Page() {
     generatingRef.current.add(projectId)
     const ghostId = "ghost-" + generateId()
 
+    const curated = buildGhostContext(enrichedBlocks)
+    const sourceBlockIds = curated.map(b => b.id)
+    const sourceBlockPreviews = curated.map(b => ({
+      id: b.id,
+      text: b.text,
+      category: b.category,
+      contentType: b.contentType,
+    }))
+
     setProjects(prev => prev.map(p => p.id === projectId ? {
       ...p,
-      ghostNotes: [...(p.ghostNotes || []), { id: ghostId, text: "", category: "thesis", isGenerating: true }],
+      ghostNotes: [...(p.ghostNotes || []), { id: ghostId, text: "", category: "thesis", isGenerating: true, sourceBlockIds, sourceBlockPreviews }],
       lastGhostBlockCount: enrichedBlocks.length,
       lastGhostTimestamp: Date.now()
     } : p))
 
     try {
-      const curated = buildGhostContext(enrichedBlocks)
       const context = curated.map(b => ({
         text: b.text,
         category: b.category,
@@ -1105,6 +1114,7 @@ export default function Page() {
                   onToggleSubTask={handleToggleSubTask}
                   onDeleteSubTask={handleDeleteSubTask}
                   highlightedBlockId={highlightedBlockId}
+                  highlightedBlockIds={highlightedBlockIds}
                   onHighlight={setHighlightedBlockId}
                 />
               ) : viewMode === "kanban" ? (
@@ -1121,6 +1131,7 @@ export default function Page() {
                   onToggleSubTask={handleToggleSubTask}
                   onDeleteSubTask={handleDeleteSubTask}
                   collapsedIds={new Set(activeProject.collapsedIds)}
+                  highlightedBlockIds={highlightedBlockIds}
                 />
               ) : (
                 <GraphArea
@@ -1149,6 +1160,8 @@ export default function Page() {
             onClose={() => setIsGhostPanelOpen(false)}
             onClaim={claimGhostNote}
             onDismiss={dismissGhostNote}
+            onHoverSources={(ids) => setHighlightedBlockIds(new Set(ids))}
+            onScrollToBlock={(id) => setHighlightedBlockId(id)}
           />
         </div>
 
